@@ -11,7 +11,7 @@ except Exception:
     END = START = StateGraph = None
     LANGGRAPH_AVAILABLE = False
 
-from .agents import agent_generator, agent_reviewer, run_pipeline
+from .agents import agent_generator, agent_reviewer
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +23,17 @@ class PlannerState(TypedDict):
 
 
 def _generate_node(state: PlannerState) -> PlannerState:
+    logger.info("LangGraph node starting: generate")
     generated = agent_generator(state["text"])
+    logger.info("LangGraph node completed: generate generated_keys=%s", sorted(generated.keys()))
     return {**state, "generated": generated}
 
 
 def _review_node(state: PlannerState) -> PlannerState:
+    logger.info("LangGraph node starting: review")
     generated = state.get("generated") or {}
     review = agent_reviewer(state["text"], generated)
+    logger.info("LangGraph node completed: review review_keys=%s", sorted(review.keys()))
     return {**state, "review": review}
 
 
@@ -44,17 +48,20 @@ def _build_graph():
 
 
 def run_pipeline_langraph(document_text: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-    """Run the planner pipeline using LangGraph if available, else fallback.
+    """Run the planner pipeline using LangGraph.
 
     Returns (generated, review)
     """
     if not LANGGRAPH_AVAILABLE:
-        logger.info("LangGraph not available; falling back to local pipeline")
-        return run_pipeline(document_text)
+        raise RuntimeError("LangGraph is not installed. Install backend requirements before running the planner.")
 
-    try:
-        result = _build_graph().invoke({"text": document_text, "generated": None, "review": None})
-        return result.get("generated") or {}, result.get("review") or {}
-    except Exception as e:
-        logger.exception("LangGraph execution failed; running sequential pipeline: %s", e)
-        return run_pipeline(document_text)
+    logger.info("LangGraph pipeline starting text_chars=%s", len(document_text))
+    result = _build_graph().invoke({"text": document_text, "generated": None, "review": None})
+    generated = result.get("generated") or {}
+    review = result.get("review") or {}
+    logger.info(
+        "LangGraph pipeline completed generated_keys=%s review_keys=%s",
+        sorted(generated.keys()),
+        sorted(review.keys()),
+    )
+    return generated, review

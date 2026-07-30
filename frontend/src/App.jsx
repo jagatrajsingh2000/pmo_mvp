@@ -79,6 +79,7 @@ function ListBlock({ items, render }) {
 export default function App() {
   const [file, setFile] = useState(null)
   const [result, setResult] = useState(null)
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const generated = result?.generated || {}
   const review = result?.review || {}
@@ -87,6 +88,8 @@ export default function App() {
     e.preventDefault()
     if (!file) return
     setLoading(true)
+    setError('')
+    setResult(null)
     const fd = new FormData()
     fd.append('file', file)
     try {
@@ -99,7 +102,7 @@ export default function App() {
       setResult(data)
     } catch (err) {
       console.error(err)
-      alert(err.message || 'Upload failed')
+      setError(err.message || 'Upload failed')
     } finally {
       setLoading(false)
     }
@@ -123,6 +126,15 @@ export default function App() {
           </button>
         </form>
       </header>
+
+      {error && (
+        <div className="workspace">
+          <section className="panel error-panel">
+            <h2>Upload Failed</h2>
+            <p>{error}</p>
+          </section>
+        </div>
+      )}
 
       {result && (
         <div className="workspace">

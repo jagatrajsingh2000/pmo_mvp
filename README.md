@@ -198,3 +198,16 @@ Expected when Azure OpenAI is configured:
   "provider": "azure_openai"
 }
 ```
+
+Debug Upload Failures
+ - Watch the backend terminal where `uvicorn` is running. The app logs each stage:
+   - upload received
+   - upload saved
+   - text extraction completed
+   - LangGraph pipeline started
+   - generate node started/completed
+   - Azure OpenAI request started/completed
+   - review node started/completed
+   - output saved
+ - If upload fails, the frontend shows the backend error message in an `Upload Failed` panel.
+ - With `FEATURE_FALLBACK=False`, the upload fails if Azure OpenAI is not configured, Azure returns an error, LangGraph is unavailable, or the AI response does not include all required planner artifact keys.

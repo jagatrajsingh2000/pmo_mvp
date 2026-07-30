@@ -1,6 +1,10 @@
 import json
+import logging
 import os
+import re
 from typing import Any, Dict
+
+logger = logging.getLogger(__name__)
 
 
 def has_azure_config() -> bool:
@@ -28,9 +32,21 @@ def planner_status() -> Dict[str, Any]:
 
 
 def _parse_json_response(text: str) -> Dict[str, Any]:
+    text = (text or "").strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"\s*```$", "", text)
+
     try:
         return json.loads(text)
     except Exception:
+        match = re.search(r"\{.*\}", text, flags=re.DOTALL)
+        if match:
+            try:
+                return json.loads(match.group(0))
+            except Exception:
+                pass
+        logger.warning("Azure OpenAI response was not valid JSON. response_length=%s", len(text))
         return {"text": text}
 
 
@@ -43,6 +59,12 @@ def call_azure_openai(prompt: str, max_tokens: int = 1500, temperature: float = 
     if not all([api_key, api_base, api_version, deployment]):
         raise RuntimeError("Missing Azure OpenAI environment variables")
 
+    logger.info(
+        "Azure OpenAI request starting deployment=%s api_version=%s prompt_chars=%s",
+        deployment,
+        api_version,
+        len(prompt),
+    )
     messages = [
         {"role": "system", "content": "You are a helpful project timeline planner assistant."},
         {"role": "user", "content": prompt},
@@ -61,9 +83,11 @@ def call_azure_openai(prompt: str, max_tokens: int = 1500, temperature: float = 
             messages=messages,
             max_tokens=max_tokens,
             temperature=temperature,
+            response_format={"type": "json_object"},
         )
         text = resp.choices[0].message.content or ""
-    except Exception:
+    except Exception as exc:
+        logger.warning("AzureOpenAI client request failed, trying legacy SDK path: %s", exc)
         import openai
 
         openai.api_type = "azure"
@@ -78,4 +102,6 @@ def call_azure_openai(prompt: str, max_tokens: int = 1500, temperature: float = 
         )
         text = resp.choices[0].message.content
 
-    return _parse_json_response(text)
+    parsed = _parse_json_response(text)
+    logger.info("Azure OpenAI request completed parsed_keys=%s", sorted(parsed.keys()))
+    return parsed
