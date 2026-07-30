@@ -6,10 +6,10 @@ from typing import Any, Dict
 def has_azure_config() -> bool:
     return all(
         [
-            os.environ.get("AZURE_OPEN_API_KEY"),
-            os.environ.get("AZURE_OPENAI_API_ENDPOINT"),
-            os.environ.get("AZURE_OPEN_API_VERSION"),
-            os.environ.get("AZURE_OPEN_API_DEPLOYMENT"),
+            os.environ.get("AZURE_OPENAI_API_KEY"),
+            os.environ.get("AZURE_OPENAI_ENDPOINT"),
+            os.environ.get("AZURE_OPENAI_API_VERSION"),
+            os.environ.get("AZURE_OPENAI_DEPLOYMENT"),
         ]
     )
 
@@ -22,10 +22,10 @@ def _parse_json_response(text: str) -> Dict[str, Any]:
 
 
 def call_azure_openai(prompt: str, max_tokens: int = 1500, temperature: float = 0.2) -> Dict[str, Any]:
-    api_key = os.environ.get("AZURE_OPEN_API_KEY")
-    api_base = os.environ.get("AZURE_OPENAI_API_ENDPOINT")
-    api_version = os.environ.get("AZURE_OPEN_API_VERSION")
-    deployment = os.environ.get("AZURE_OPEN_API_DEPLOYMENT")
+    api_key = os.environ.get("AZURE_OPENAI_API_KEY")
+    api_base = os.environ.get("AZURE_OPENAI_ENDPOINT")
+    api_version = os.environ.get("AZURE_OPENAI_API_VERSION")
+    deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT")
 
     if not all([api_key, api_base, api_version, deployment]):
         raise RuntimeError("Missing Azure OpenAI environment variables")
