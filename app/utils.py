@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 import aiofiles
 from typing import Union
@@ -87,8 +86,12 @@ def _extract_text_excel(path: Path) -> str:
     try:
         import pandas as pd
 
-        df = pd.read_excel(str(path), engine="openpyxl")
-        return df.to_csv(index=False)
+        sheets = pd.read_excel(str(path), sheet_name=None, engine="openpyxl")
+        parts = []
+        for sheet_name, df in sheets.items():
+            parts.append(f"Sheet: {sheet_name}")
+            parts.append(df.to_csv(index=False))
+        return "\n".join(parts)
     except Exception:
         raise
 
@@ -101,46 +104,3 @@ def _extract_text_csv(path: Path) -> str:
         return df.to_csv(index=False)
     except Exception:
         raise
-
-
-def agent_create_outputs(document_text: str):
-    """Agent that creates the required timeline outputs from extracted document text."""
-    prompt = (
-        "You are a project timeline planner. Given the following project document content, "
-        "extract and produce a JSON object with the following keys: wbs, project_schedule, "
-        "sprint_plan, milestone_plan, critical_path, dependency_map, resource_allocation, "
-        "timeline_risks, effort_estimation, schedule_optimizations. Use arrays or simple objects. "
-        "Return only valid JSON. If a field cannot be determined, set it to null or an empty array.\n\n"
-        f"Document content:\n\n{document_text[:8000]}"
-    )
-
-    resp = call_azure_openai(prompt)
-    return resp
-
-
-def agent_review_outputs(original_text: str, generated_outputs):
-    """Agent that reviews generated outputs and suggests improvements.
-
-    `generated_outputs` may be a dict or text wrapper returned from `call_azure_openai`.
-    """
-    import json
-
-    gen_json = generated_outputs
-    if isinstance(generated_outputs, dict) and "text" in generated_outputs and not (
-        any(k in generated_outputs for k in ("wbs", "project_schedule"))
-    ):
-        # If previous call returned raw text, try to include it as string
-        gen_json = generated_outputs
-
-    prompt = (
-        "You are a senior project manager reviewing the generated project timeline outputs. "
-        "Given the original project document content and the generated outputs, produce a short JSON object with: "
-        "- issues: list of problems or missing information, "
-        "- suggestions: list of concrete improvements or data to collect, "
-        "- confidence: low/medium/high.\n\n"
-        f"Original document snippet:\n{original_text[:3000]}\n\n"
-        f"Generated outputs:\n{json.dumps(gen_json, ensure_ascii=False) if not isinstance(gen_json, str) else str(gen_json)}"
-    )
-
-    resp = call_azure_openai(prompt)
-    return resp

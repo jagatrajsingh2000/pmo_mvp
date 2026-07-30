@@ -1,57 +1,60 @@
-"""Optional Langraph adapter for orchestrating planner agents.
+"""LangGraph adapter for orchestrating planner agents."""
 
-This adapter tries to use `langraph` if it's installed. If not available, it falls back
-to the local `run_pipeline` implementation from `planner_agent.agents`.
-
-To enable full Langraph integration, install the `langraph` package and adapt the
-`build_graph` function below to match the Langraph API you want to use.
-"""
-
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple, TypedDict
 import logging
 
 try:
-    import langraph  # type: ignore
-    LANGRAPH_AVAILABLE = True
-except Exception:
-    LANGRAPH_AVAILABLE = False
+    from langgraph.graph import END, START, StateGraph
 
-from .agents import run_pipeline
+    LANGGRAPH_AVAILABLE = True
+except Exception:
+    END = START = StateGraph = None
+    LANGGRAPH_AVAILABLE = False
+
+from .agents import agent_generator, agent_reviewer, run_pipeline
 
 logger = logging.getLogger(__name__)
 
 
+class PlannerState(TypedDict):
+    text: str
+    generated: Optional[Dict[str, Any]]
+    review: Optional[Dict[str, Any]]
+
+
+def _generate_node(state: PlannerState) -> PlannerState:
+    generated = agent_generator(state["text"])
+    return {**state, "generated": generated}
+
+
+def _review_node(state: PlannerState) -> PlannerState:
+    generated = state.get("generated") or {}
+    review = agent_reviewer(state["text"], generated)
+    return {**state, "review": review}
+
+
+def _build_graph():
+    graph = StateGraph(PlannerState)
+    graph.add_node("generate", _generate_node)
+    graph.add_node("review", _review_node)
+    graph.add_edge(START, "generate")
+    graph.add_edge("generate", "review")
+    graph.add_edge("review", END)
+    return graph.compile()
+
+
 def run_pipeline_langraph(document_text: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-    """Run the planner pipeline using Langraph if available, else fallback.
+    """Run the planner pipeline using LangGraph if available, else fallback.
 
     Returns (generated, review)
     """
-    if not LANGRAPH_AVAILABLE:
-        logger.info("Langraph not available; falling back to local pipeline")
+    if not LANGGRAPH_AVAILABLE:
+        logger.info("LangGraph not available; falling back to local pipeline")
         return run_pipeline(document_text)
 
-    # If Langraph is installed, attempt a basic graph orchestration. The exact
-    # API depends on the langraph package version; users should adapt this.
     try:
-        # Example pseudo-code: build and execute a graph with two nodes.
-        # Replace this with actual Langraph usage if needed.
-        graph = langraph.Graph(name="planner_pipeline")
-
-        def gen_node(ctx):
-            ctx["generated"] = run_pipeline(ctx["text"])[0]
-
-        def review_node(ctx):
-            ctx["review"] = run_pipeline(ctx["text"])[1]
-
-        graph.add_node("generate", gen_node)
-        graph.add_node("review", review_node, depends_on=["generate"])
-
-        ctx = {"text": document_text}
-        graph.run(ctx)
-
-        generated = ctx.get("generated")
-        review = ctx.get("review")
-        return generated, review
+        result = _build_graph().invoke({"text": document_text, "generated": None, "review": None})
+        return result.get("generated") or {}, result.get("review") or {}
     except Exception as e:
-        logger.exception("Langraph execution failed, falling back: %s", e)
+        logger.exception("LangGraph execution failed, falling back: %s", e)
         return run_pipeline(document_text)

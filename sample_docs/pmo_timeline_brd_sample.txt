@@ -1,0 +1,40 @@
+Project Name: Customer Onboarding Portal
+
+Overview:
+The Customer Onboarding Portal will allow enterprise customers to submit onboarding details, upload compliance documents, track onboarding status, and receive automated notifications. PMO leaders need a first-pass delivery timeline that turns this BRD into execution artifacts.
+
+Business Goals:
+- Reduce manual onboarding coordination by 40 percent.
+- Provide a single source of truth for onboarding status.
+- Enable compliance and operations teams to review documents inside one workflow.
+
+Scope:
+- Conduct discovery and confirm onboarding workflow requirements.
+- Design customer, operations, and compliance screens.
+- Build secure document upload and metadata capture.
+- Implement onboarding status workflow and notifications.
+- Integrate with CRM account records.
+- Test role-based access, file upload, and notification scenarios.
+- Prepare launch readiness plan and stakeholder sign-off.
+
+Project start date: 2026-08-03
+Major launch milestone: 2026-11-27
+Sprint duration: 2 weeks
+Team availability: 4 developers, 2 QA, 1 UX designer, 1 PM, 1 Scrum Master
+
+Milestones and deadlines:
+- Requirements sign-off: 2026-08-21
+- UX prototype approval: 2026-09-04
+- CRM integration complete: 2026-10-16
+- UAT complete: 2026-11-13
+- Production launch: 2026-11-27
+
+Dependency information:
+- CRM API access is required before CRM integration can start.
+- Compliance policy approval is required before document retention rules are finalized.
+- Notification templates require marketing approval before UAT.
+
+Timeline risks:
+- CRM sandbox availability may delay integration testing.
+- Compliance review can add rework if policies are not confirmed early.
+- Customer pilot users may have limited availability during UAT.

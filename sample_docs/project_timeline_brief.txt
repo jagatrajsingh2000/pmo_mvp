@@ -1,0 +1,48 @@
+Project Timeline Brief
+
+Project Name: PMO Timeline Planner MVP
+
+Overview:
+The PMO Timeline Planner MVP will provide project managers with a simple way to upload project artifacts and automatically generate a structured project timeline. The tool should support document extraction, milestone creation, task scheduling, critical path identification, and resource allocation recommendations.
+
+Scope:
+- Support file uploads for PDF, Excel, CSV, and Word documents.
+- Extract requirements, deadlines, tasks, and dependencies.
+- Produce a proposed Work Breakdown Structure (WBS).
+- Generate a milestone plan and sprint plan.
+- Provide suggested resource allocation based on assumed team capacity.
+- Include risk and dependency analysis.
+
+Background:
+This product is intended for PMO teams and project managers who need a lightweight assistant to translate raw project documentation into a first draft timeline. The goal is to reduce the time spent manually reading requirement docs and creating schedule artifacts.
+
+Key stakeholders:
+- Program Manager: Priya Mishra
+- Delivery Manager: Ashu Singh
+- Scrum Master: Akash Gupta
+- PMO Lead: Radhika Patel
+
+Inputs:
+- Business Requirements Document (BRD)
+- Project backlog items
+- Milestone dates
+- Resource availability
+- Dependencies between tasks and teams
+
+Desired Outputs:
+- Work Breakdown Structure (WBS)
+- Project schedule with start/end dates
+- Sprint plan
+- Milestone plan
+- Critical path analysis
+- Dependency map
+- Resource allocation plan
+- Timeline risks
+- Effort estimation
+- Schedule optimization suggestions
+
+Example Constraints:
+- Project start date: 2026-08-01
+- Major launch milestone: 2026-12-15
+- Team availability: 3 developers, 1 QA, 1 UX designer, 1 PM
+- Sprint duration: 2 weeks

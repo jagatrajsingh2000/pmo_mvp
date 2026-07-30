@@ -1,0 +1,9 @@
+id,type,title,owner_role,estimate_days,depends_on,deadline
+US-001,story,As a customer I can create an onboarding profile,developer,5,,2026-08-28
+US-002,story,As a customer I can upload compliance documents,developer,8,US-001,2026-09-11
+US-003,story,As an operations user I can review submitted profiles,developer,5,US-001,2026-09-18
+US-004,story,As a compliance reviewer I can approve or reject documents,developer,8,US-002,2026-10-02
+US-005,story,As a PM I can see onboarding status dashboards,developer,5,US-003,2026-10-16
+US-006,story,As a customer I receive email updates when status changes,developer,5,US-004,2026-10-30
+QA-001,test,Regression test upload access and workflow transitions,qa,8,US-006,2026-11-13
+REL-001,release,Prepare launch checklist and stakeholder sign-off,project_manager,5,QA-001,2026-11-27

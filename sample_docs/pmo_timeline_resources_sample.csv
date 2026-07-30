@@ -1,0 +1,10 @@
+role,name,availability_percent,start_date,end_date,notes
+project_manager,Priya Mishra,75,2026-08-03,2026-11-27,Owns governance milestones and stakeholder reporting
+scrum_master,Akash Gupta,100,2026-08-03,2026-11-27,Facilitates sprint planning and dependency reviews
+ux_designer,Neha Rao,60,2026-08-03,2026-09-18,Needed heavily during discovery and prototype approval
+developer,Rahul Shah,100,2026-08-03,2026-11-13,Backend and CRM integration
+developer,Isha Mehta,100,2026-08-03,2026-11-13,Frontend portal workflows
+developer,Vikram Nair,80,2026-08-17,2026-11-13,Notifications and dashboard
+developer,Aman Kapoor,50,2026-09-01,2026-10-30,Shared platform support
+qa,Meera Joshi,100,2026-09-01,2026-11-20,Functional and regression testing
+qa,Farhan Ali,60,2026-10-01,2026-11-20,UAT and release validation
