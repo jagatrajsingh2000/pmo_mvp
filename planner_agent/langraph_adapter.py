@@ -56,5 +56,5 @@ def run_pipeline_langraph(document_text: str) -> Tuple[Dict[str, Any], Dict[str,
         result = _build_graph().invoke({"text": document_text, "generated": None, "review": None})
         return result.get("generated") or {}, result.get("review") or {}
     except Exception as e:
-        logger.exception("LangGraph execution failed, falling back: %s", e)
+        logger.exception("LangGraph execution failed; running sequential pipeline: %s", e)
         return run_pipeline(document_text)

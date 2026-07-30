@@ -2,7 +2,7 @@
 
 FastAPI + React app that accepts project documents (PDF, XLSX, CSV, DOCX, TXT), extracts text locally, and generates PMO timeline artifacts: WBS, project schedule, sprint plan, milestone plan, critical path, dependency map, resource allocation, timeline risks, effort estimates, and schedule optimization recommendations.
 
-The planner uses Azure OpenAI when `.env` is configured. If Azure values are missing or the call fails, it falls back to a deterministic local planner so the app remains testable with the included sample documents.
+The planner uses Azure OpenAI through the official OpenAI Python SDK when `.env` is configured. Local deterministic fallback is disabled by default and only runs when `FEATURE_FALLBACK=True`.
 
 Quick Start
 
@@ -48,11 +48,22 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 Then activate the environment again.
 
-Configure Azure OpenAI values in `.env` when you want AI-generated plans. If `.env` is empty, the backend still runs with the local deterministic planner for sample testing.
+Configure Azure OpenAI values in `.env` for AI-generated plans:
+
+```bash
+AZURE_OPENAI_API_KEY=your-key
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_OPENAI_API_VERSION=2025-01-01-PREVIEW
+AZURE_OPENAI_DEPLOYMENT=your-deployment-name
+FEATURE_FALLBACK=False
+```
+
+With `FEATURE_FALLBACK=False`, missing Azure values or Azure API errors fail clearly instead of silently using local output. Set `FEATURE_FALLBACK=True` only when you want deterministic local sample testing.
 
 Endpoints
 
 - `GET /health` - basic health check
+- `GET /planner-status` - shows whether Azure OpenAI is configured and whether fallback is enabled, without exposing secrets
 - `GET /sample-documents` - lists local documents under `sample_docs/`
 - `POST /upload` - multipart upload file field `file`; returns generated planner artifacts and review
 - `POST /plan-text` - JSON body with `text`; returns generated planner artifacts and review
@@ -62,7 +73,7 @@ Note: This is an initial prototype. Files are stored in `uploads/` and outputs i
 Planner agent
  - AI and deterministic planning code is in `planner_agent/` separated from the FastAPI service.
  - Shared prompt contracts live in `planner_agent/prompts.py` to keep generation and review DRY.
- - Local fallback logic lives in `planner_agent/local_planner.py` for repeatable sample testing.
+ - Local fallback logic lives in `planner_agent/local_planner.py` and only runs when `FEATURE_FALLBACK=True`.
 
 Frontend
  - A React frontend (Vite) is in `frontend/`. Run it in a second terminal while the backend is running.
@@ -169,4 +180,21 @@ Windows PowerShell:
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-If `langgraph` is not installed, the app falls back to the internal pipeline implementation. If Azure OpenAI values are missing from `.env`, LangGraph still runs but uses the local deterministic planner nodes.
+If `langgraph` is not installed, the app falls back to the internal sequential pipeline. Azure OpenAI is still required unless `FEATURE_FALLBACK=True`.
+
+Check OpenAI Usage
+ - Start the backend and call:
+
+```bash
+curl http://localhost:8000/planner-status
+```
+
+Expected when Azure OpenAI is configured:
+
+```json
+{
+  "azure_openai_configured": true,
+  "feature_fallback_enabled": false,
+  "provider": "azure_openai"
+}
+```

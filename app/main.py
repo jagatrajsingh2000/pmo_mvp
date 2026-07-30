@@ -6,6 +6,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 from app.utils import save_upload_file, extract_text_from_file
 from planner_agent import run_pipeline_langraph
+from planner_agent.azure_client import planner_status
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
@@ -32,6 +33,11 @@ app.add_middleware(
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/planner-status")
+def get_planner_status():
+    return planner_status()
 
 
 def _build_response(file_id: str, filename: str, text: str):
