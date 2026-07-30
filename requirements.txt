@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+python-multipart
+aiofiles
+openai
+python-dotenv
+PyPDF2
+python-docx
+pandas
+openpyxl
+pdf2image
+pytesseract
+Pillow
+# optional: langraph integration (install when ready)
+langraph

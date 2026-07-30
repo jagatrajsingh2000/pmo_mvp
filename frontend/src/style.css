@@ -1,0 +1,4 @@
+body { font-family: system-ui, Arial, sans-serif; padding: 2rem; }
+.container { max-width: 800px; margin: 0 auto; }
+form { display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; }
+pre { background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto; }
