@@ -2,9 +2,15 @@ import json
 import logging
 import os
 import re
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
+
+
+class AIJsonParseError(RuntimeError):
+    def __init__(self, message: str, raw_text: str):
+        super().__init__(message)
+        self.raw_text = raw_text
 
 
 def has_azure_config() -> bool:
@@ -47,10 +53,15 @@ def _parse_json_response(text: str) -> Dict[str, Any]:
             except Exception:
                 pass
         logger.warning("Azure OpenAI response was not valid JSON. response_length=%s", len(text))
-        return {"text": text}
+        raise AIJsonParseError("Azure OpenAI response was not valid JSON.", text)
 
 
-def call_azure_openai(prompt: str, max_tokens: int = 1500, temperature: float = 0.2) -> Dict[str, Any]:
+def call_azure_openai(
+    prompt: str,
+    max_tokens: int = 4096,
+    temperature: float = 0.1,
+    request_label: Optional[str] = None,
+) -> Dict[str, Any]:
     api_key = os.environ.get("AZURE_OPENAI_API_KEY")
     api_base = os.environ.get("AZURE_OPENAI_ENDPOINT")
     api_version = os.environ.get("AZURE_OPENAI_API_VERSION")
@@ -60,48 +71,46 @@ def call_azure_openai(prompt: str, max_tokens: int = 1500, temperature: float = 
         raise RuntimeError("Missing Azure OpenAI environment variables")
 
     logger.info(
-        "Azure OpenAI request starting deployment=%s api_version=%s prompt_chars=%s",
+        "Azure OpenAI request starting label=%s deployment=%s api_version=%s prompt_chars=%s max_tokens=%s",
+        request_label or "unknown",
         deployment,
         api_version,
         len(prompt),
+        max_tokens,
     )
     messages = [
-        {"role": "system", "content": "You are a helpful project timeline planner assistant."},
+        {
+            "role": "system",
+            "content": (
+                "You are a PMO planning assistant. Return only one valid JSON object. "
+                "Do not include markdown, code fences, comments, explanations, or prose outside JSON."
+            ),
+        },
         {"role": "user", "content": prompt},
     ]
 
-    try:
-        from openai import AzureOpenAI
+    from openai import AzureOpenAI
 
-        client = AzureOpenAI(
-            api_key=api_key,
-            azure_endpoint=api_base,
-            api_version=api_version,
-        )
-        resp = client.chat.completions.create(
-            model=deployment,
-            messages=messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            response_format={"type": "json_object"},
-        )
-        text = resp.choices[0].message.content or ""
-    except Exception as exc:
-        logger.warning("AzureOpenAI client request failed, trying legacy SDK path: %s", exc)
-        import openai
-
-        openai.api_type = "azure"
-        openai.api_key = api_key
-        openai.api_base = api_base
-        openai.api_version = api_version
-        resp = openai.ChatCompletion.create(
-            model=deployment,
-            messages=messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-        )
-        text = resp.choices[0].message.content
+    client = AzureOpenAI(
+        api_key=api_key,
+        azure_endpoint=api_base,
+        api_version=api_version,
+    )
+    resp = client.chat.completions.create(
+        model=deployment,
+        messages=messages,
+        max_tokens=max_tokens,
+        temperature=temperature,
+        response_format={"type": "json_object"},
+    )
+    text = resp.choices[0].message.content or ""
 
     parsed = _parse_json_response(text)
-    logger.info("Azure OpenAI request completed parsed_keys=%s", sorted(parsed.keys()))
+    usage = getattr(resp, "usage", None)
+    logger.info(
+        "Azure OpenAI request completed label=%s parsed_keys=%s usage=%s",
+        request_label or "unknown",
+        sorted(parsed.keys()),
+        usage,
+    )
     return parsed

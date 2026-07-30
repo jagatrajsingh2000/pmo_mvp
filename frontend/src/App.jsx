@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 
-const API_BASE = 'http://localhost:8000'
+const API_BASE = `http://${window.location.hostname || 'localhost'}:8000`
 
 function asArray(value) {
   if (!value) return []
@@ -97,7 +97,8 @@ export default function App() {
         method: 'POST',
         body: fd,
       })
-      const data = await res.json()
+      const contentType = res.headers.get('content-type') || ''
+      const data = contentType.includes('application/json') ? await res.json() : { detail: await res.text() }
       if (!res.ok) throw new Error(data.detail || 'Upload failed')
       setResult(data)
     } catch (err) {

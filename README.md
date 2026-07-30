@@ -211,3 +211,5 @@ Debug Upload Failures
    - output saved
  - If upload fails, the frontend shows the backend error message in an `Upload Failed` panel.
  - With `FEATURE_FALLBACK=False`, the upload fails if Azure OpenAI is not configured, Azure returns an error, LangGraph is unavailable, or the AI response does not include all required planner artifact keys.
+ - Generator requests use Azure OpenAI JSON mode with `response_format={"type":"json_object"}`.
+ - If the first AI response is invalid JSON or misses required artifact keys, the generator makes one stricter AI repair request. If that also fails, the upload fails instead of rendering incomplete data.
