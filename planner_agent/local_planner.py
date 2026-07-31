@@ -146,6 +146,8 @@ def _tasks(text: str, start: date, sprint_days: int) -> List[Dict[str, Any]]:
                 "start_date": current_start.isoformat(),
                 "end_date": end.isoformat(),
                 "owner_role": _owner_role(candidate),
+                "status": "Not Started",
+                "priority": "High" if index <= 3 else "Medium",
                 "dependencies": [] if index == 1 else [f"T{index - 1:02d}"],
             }
         )
@@ -186,7 +188,15 @@ def _add_work_days(start: date, days: int) -> date:
 
 
 def _wbs(tasks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    return [{"code": f"1.{index}", "task_id": task["id"], "deliverable": task["name"]} for index, task in enumerate(tasks, 1)]
+    return [
+        {
+            "code": f"1.{index}",
+            "task_id": task["id"],
+            "deliverable": task["name"],
+            "status": task.get("status", "Not Started"),
+        }
+        for index, task in enumerate(tasks, 1)
+    ]
 
 
 def _sprints(tasks: List[Dict[str, Any]], start: date, sprint_days: int) -> List[Dict[str, Any]]:
@@ -248,6 +258,8 @@ def _risks(text: str, launch: Optional[date], tasks: List[Dict[str, Any]]) -> Li
         {
             "risk": "Dependency details may be incomplete in the source document.",
             "mitigation": "Confirm predecessor and blocker relationships during planning review.",
+            "likelihood": 3,
+            "impact": 4,
         }
     ]
     if launch and tasks:
@@ -257,6 +269,8 @@ def _risks(text: str, launch: Optional[date], tasks: List[Dict[str, Any]]) -> Li
                 {
                     "risk": "Generated schedule exceeds the launch deadline.",
                     "mitigation": "Parallelize discovery/build tracks or reduce MVP scope.",
+                    "likelihood": 4,
+                    "impact": 5,
                 }
             )
     if "resource availability" in text.lower():
@@ -264,6 +278,8 @@ def _risks(text: str, launch: Optional[date], tasks: List[Dict[str, Any]]) -> Li
             {
                 "risk": "Resource availability needs calendar-level validation.",
                 "mitigation": "Collect holidays, leave plans, and allocation percentages.",
+                "likelihood": 3,
+                "impact": 3,
             }
         )
     return risks
@@ -271,10 +287,15 @@ def _risks(text: str, launch: Optional[date], tasks: List[Dict[str, Any]]) -> Li
 
 def _effort(tasks: List[Dict[str, Any]]) -> Dict[str, Any]:
     total = sum(task["duration_days"] for task in tasks)
+    by_role = {}
+    for task in tasks:
+        role = task.get("owner_role", "unassigned")
+        by_role[role] = by_role.get(role, 0) + int(task.get("duration_days", 0))
     return {
         "total_duration_days": total,
         "total_person_days": total,
         "basis": "First-pass estimate from inferred scope items.",
+        "by_role": [{"role": role, "person_days": days} for role, days in sorted(by_role.items())],
     }
 
 

@@ -16,12 +16,15 @@ ARTIFACT_KEYS = [
 
 
 GENERATOR_JSON_CONTRACT = {
-    "wbs": [{"code": "1.1", "deliverable": "string", "task_id": "T01"}],
+    "project_name": "string",
+    "wbs": [{"code": "1.1", "deliverable": "string", "task_id": "T01", "status": "Not Started | In Progress | Done | At Risk"}],
     "project_schedule": [
         {
             "id": "T01",
             "name": "string",
             "owner_role": "string",
+            "status": "Not Started | In Progress | Done | At Risk",
+            "priority": "Low | Medium | High | Critical",
             "duration_days": 1,
             "start_date": "YYYY-MM-DD or null",
             "end_date": "YYYY-MM-DD or null",
@@ -33,8 +36,13 @@ GENERATOR_JSON_CONTRACT = {
     "critical_path": {"task_ids": ["T01"], "summary": "string"},
     "dependency_map": [{"task_id": "T01", "depends_on": ["T00"], "blocks": ["T02"]}],
     "resource_allocation": [{"role": "string", "available_count": 0, "assigned_task_ids": ["T01"]}],
-    "timeline_risks": [{"risk": "string", "mitigation": "string"}],
-    "effort_estimation": {"total_duration_days": 0, "total_person_days": 0, "basis": "string"},
+    "timeline_risks": [{"risk": "string", "mitigation": "string", "likelihood": 1, "impact": 1}],
+    "effort_estimation": {
+        "total_duration_days": 0,
+        "total_person_days": 0,
+        "basis": "string",
+        "by_role": [{"role": "string", "person_days": 0}],
+    },
     "schedule_optimizations": ["string"],
 }
 
@@ -47,6 +55,8 @@ def generator_prompt(document_text: str) -> str:
         f"The top-level JSON object must contain these exact keys: {keys}. "
         "Never wrap the JSON in markdown. Never include explanatory text outside the JSON. "
         "If a value cannot be determined, use null, an empty array, or a clearly marked assumption. "
+        "Infer reasonable status and priority values from the document where possible. "
+        "Use timeline_risks entries with likelihood and impact values from 1 to 5 when possible. "
         "Use this JSON shape:\n"
         f"{json.dumps(GENERATOR_JSON_CONTRACT, ensure_ascii=False, indent=2)}\n\n"
         f"Document content:\n\n{document_text[:8000]}"
