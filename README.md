@@ -70,8 +70,10 @@ Endpoints
 Note: This is an initial prototype. Files are stored in `uploads/` and outputs in `outputs/`.
 
 Planner agent
- - AI planning code is in `planner_agent/` separated from the FastAPI service.
- - Shared prompt contracts live in `planner_agent/prompts.py` to keep generation and review DRY.
+ - FastAPI planner routes live in `app/planner_agent/route/planer_api.py`.
+ - Upload saving and document text extraction helpers live in `app/planner_agent/route/utils.py`.
+ - Azure OpenAI and LangGraph agent code lives in `app/planner_agent/agent/`.
+ - Shared prompt contracts live in `app/planner_agent/agent/prompts.py` to keep generation and review DRY.
 
 Frontend
  - A React frontend (Vite) is in `frontend/`. Run it in a second terminal while the backend is running.
@@ -162,7 +164,7 @@ brew install tesseract
 ```
 
 LangGraph integration
- - The project includes a LangGraph adapter at `planner_agent/langraph_adapter.py`.
+ - The project includes a LangGraph adapter at `app/planner_agent/agent/langraph_adapter.py`.
  - You do not start LangGraph as a separate server. Start the FastAPI backend; the backend runs the LangGraph planner pipeline inside the Python process.
  - `langgraph` is included in `requirements.txt`, so it is installed when you install backend dependencies in `.venv`.
  - To start the backend with LangGraph available:
