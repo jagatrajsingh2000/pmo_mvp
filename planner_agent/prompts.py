@@ -142,7 +142,7 @@ def _document_context(document_text: str, max_chars: int) -> str:
 
 def generator_prompt(document_text: str) -> str:
     keys = ", ".join(ARTIFACT_KEYS)
-    source_context = _document_context(document_text, 28000)
+    source_context = _document_context(document_text, 20000)
     return (
         "Create PMO timeline planning artifacts from the project document. "
         "Return exactly one JSON object and nothing else. "
@@ -168,7 +168,7 @@ def generator_prompt(document_text: str) -> str:
 
 def generator_retry_prompt(document_text: str, invalid_response: Any, error: str) -> str:
     invalid_text = invalid_response if isinstance(invalid_response, str) else json.dumps(invalid_response, ensure_ascii=False)
-    source_context = _document_context(document_text, 28000)
+    source_context = _document_context(document_text, 20000)
     return (
         "Your previous response failed validation for the PMO timeline planner. "
         f"Validation error: {error}\n\n"

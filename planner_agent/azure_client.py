@@ -8,9 +8,10 @@ logger = logging.getLogger(__name__)
 
 
 class AIJsonParseError(RuntimeError):
-    def __init__(self, message: str, raw_text: str):
+    def __init__(self, message: str, raw_text: str, finish_reason: Optional[str] = None):
         super().__init__(message)
         self.raw_text = raw_text
+        self.finish_reason = finish_reason
 
 
 def has_azure_config() -> bool:
@@ -31,7 +32,7 @@ def planner_status() -> Dict[str, Any]:
     }
 
 
-def _parse_json_response(text: str) -> Dict[str, Any]:
+def _parse_json_response(text: str, finish_reason: Optional[str] = None) -> Dict[str, Any]:
     text = (text or "").strip()
     if text.startswith("```"):
         text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
@@ -46,13 +47,25 @@ def _parse_json_response(text: str) -> Dict[str, Any]:
                 return json.loads(match.group(0))
             except Exception:
                 pass
-        logger.warning("Azure OpenAI response was not valid JSON. response_length=%s", len(text))
-        raise AIJsonParseError("Azure OpenAI response was not valid JSON.", text)
+        logger.warning(
+            "Azure OpenAI response was not valid JSON. response_length=%s finish_reason=%s preview=%r tail=%r",
+            len(text),
+            finish_reason,
+            text[:500],
+            text[-500:],
+        )
+        if finish_reason == "length":
+            raise AIJsonParseError(
+                "Azure OpenAI response was truncated before valid JSON completed. Increase AZURE_OPENAI_MAX_TOKENS or reduce input size.",
+                text,
+                finish_reason,
+            )
+        raise AIJsonParseError("Azure OpenAI response was not valid JSON.", text, finish_reason)
 
 
 def call_azure_openai(
     prompt: str,
-    max_tokens: int = 4096,
+    max_tokens: Optional[int] = None,
     temperature: float = 0.1,
     request_label: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -63,6 +76,7 @@ def call_azure_openai(
 
     if not all([api_key, api_base, api_version, deployment]):
         raise RuntimeError("Missing Azure OpenAI environment variables")
+    token_budget = max_tokens or int(os.environ.get("AZURE_OPENAI_MAX_TOKENS", "12000"))
 
     logger.info(
         "Azure OpenAI request starting label=%s deployment=%s api_version=%s prompt_chars=%s max_tokens=%s",
@@ -70,7 +84,7 @@ def call_azure_openai(
         deployment,
         api_version,
         len(prompt),
-        max_tokens,
+        token_budget,
     )
     messages = [
         {
@@ -93,18 +107,20 @@ def call_azure_openai(
     resp = client.chat.completions.create(
         model=deployment,
         messages=messages,
-        max_tokens=max_tokens,
+        max_tokens=token_budget,
         temperature=temperature,
         response_format={"type": "json_object"},
     )
     text = resp.choices[0].message.content or ""
+    finish_reason = getattr(resp.choices[0], "finish_reason", None)
 
-    parsed = _parse_json_response(text)
+    parsed = _parse_json_response(text, finish_reason)
     usage = getattr(resp, "usage", None)
     logger.info(
-        "Azure OpenAI request completed label=%s parsed_keys=%s usage=%s",
+        "Azure OpenAI request completed label=%s parsed_keys=%s finish_reason=%s usage=%s",
         request_label or "unknown",
         sorted(parsed.keys()),
+        finish_reason,
         usage,
     )
     return parsed

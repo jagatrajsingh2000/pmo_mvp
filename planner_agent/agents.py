@@ -89,7 +89,7 @@ def _validate_review(review: Dict[str, Any]) -> None:
 def _generate_with_ai(document_text: str) -> Dict[str, Any]:
     first_response = None
     try:
-        first_response = call_azure_openai(generator_prompt(document_text), request_label="generator")
+        first_response = call_azure_openai(generator_prompt(document_text), max_tokens=12000, request_label="generator")
         _validate_generated(first_response, document_text)
         return first_response
     except Exception as first_error:
@@ -97,6 +97,7 @@ def _generate_with_ai(document_text: str) -> Dict[str, Any]:
         logger.warning("Generator response failed validation; retrying with repair prompt: %s", first_error)
         repaired = call_azure_openai(
             generator_retry_prompt(document_text, raw_response or "", str(first_error)),
+            max_tokens=12000,
             request_label="generator_retry",
         )
         _validate_generated(repaired, document_text)
@@ -116,7 +117,7 @@ def agent_reviewer(document_text: str, generated: Any) -> Dict[str, Any]:
     logger.info("Planner reviewer starting")
     if not has_azure_config():
         raise RuntimeError("Azure OpenAI is not configured. Set the required Azure OpenAI environment variables.")
-    review = call_azure_openai(reviewer_prompt(document_text, generated), request_label="reviewer")
+    review = call_azure_openai(reviewer_prompt(document_text, generated), max_tokens=6000, request_label="reviewer")
     _validate_review(review)
     logger.info("Planner reviewer completed via Azure OpenAI")
     return review
