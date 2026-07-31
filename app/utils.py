@@ -76,8 +76,20 @@ def _extract_text_docx(path: Path) -> str:
         import docx
 
         doc = docx.Document(str(path))
-        paragraphs = [p.text for p in doc.paragraphs]
-        return "\n".join(paragraphs)
+        parts = []
+        paragraphs = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
+        if paragraphs:
+            parts.append("Paragraphs:")
+            parts.extend(paragraphs)
+
+        for table_index, table in enumerate(doc.tables, start=1):
+            parts.append(f"\nTable {table_index}:")
+            for row in table.rows:
+                cells = [cell.text.strip().replace("\n", " ") for cell in row.cells]
+                if any(cells):
+                    parts.append(" | ".join(cells))
+
+        return "\n".join(parts)
     except Exception:
         raise
 

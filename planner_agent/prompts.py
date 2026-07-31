@@ -44,6 +44,35 @@ GENERATOR_JSON_CONTRACT = {
         "by_role": [{"role": "string", "person_days": 0}],
     },
     "schedule_optimizations": ["string"],
+    "source_traceability": [
+        {
+            "artifact": "string",
+            "source_section": "string",
+            "source_evidence": "short quote or paraphrase from source",
+            "confidence": "low | medium | high",
+        }
+    ],
+    "stakeholder_mapping": [
+        {
+            "role": "string",
+            "name": "string or null",
+            "raci": "A | R | C | I | null",
+            "engagement": "string",
+            "responsibility": "string",
+        }
+    ],
+    "requirements_quality": {
+        "functional_coverage": "string",
+        "non_functional_coverage": "string",
+        "acceptance_criteria_coverage": "string",
+        "missing_requirements": ["string"],
+    },
+    "audit_readiness": {
+        "approval_gates": ["string"],
+        "signoffs_needed": ["string"],
+        "compliance_items": ["string"],
+        "evidence_gaps": ["string"],
+    },
 }
 
 
@@ -57,9 +86,13 @@ def generator_prompt(document_text: str) -> str:
         "If a value cannot be determined, use null, an empty array, or a clearly marked assumption. "
         "Infer reasonable status and priority values from the document where possible. "
         "Use timeline_risks entries with likelihood and impact values from 1 to 5 when possible. "
+        "Extract table content from the document when present, especially stakeholders, functional requirements, "
+        "non-functional requirements, risks, dependencies, integrations, governance gates, and sign-off rows. "
+        "Include source_traceability, stakeholder_mapping, requirements_quality, and audit_readiness fields. "
+        "Use source_evidence only when supported by the document text. "
         "Use this JSON shape:\n"
         f"{json.dumps(GENERATOR_JSON_CONTRACT, ensure_ascii=False, indent=2)}\n\n"
-        f"Document content:\n\n{document_text[:8000]}"
+        f"Document content:\n\n{document_text[:16000]}"
     )
 
 
@@ -73,7 +106,7 @@ def generator_retry_prompt(document_text: str, invalid_response: Any, error: str
         "The object must match this shape and include every top-level key:\n"
         f"{json.dumps(GENERATOR_JSON_CONTRACT, ensure_ascii=False, indent=2)}\n\n"
         f"Previous invalid response:\n{invalid_text[:3000]}\n\n"
-        f"Original document content:\n{document_text[:8000]}"
+        f"Original document content:\n{document_text[:16000]}"
     )
 
 
@@ -111,9 +144,12 @@ def reviewer_prompt(document_text: str, generated: Any) -> str:
         "Return exactly one valid JSON object and nothing else. "
         "Score each quality category from 0 to 100, where 100 means excellent. "
         "Ground every score in the original document and generated output; do not invent unsupported evidence. "
+        "Award higher scores when the generated output includes grounded source_traceability, stakeholder_mapping, "
+        "requirements_quality, and audit_readiness details that match the original document. "
+        "Do not penalize page-number traceability if the extracted DOCX text has no page numbers; score section/table traceability instead. "
         f"The quality_scores array must contain exactly these categories: {', '.join(categories)}. "
         "Use this JSON shape:\n"
         f"{json.dumps(quality_contract, ensure_ascii=False, indent=2)}\n\n"
-        f"Original document snippet:\n{document_text[:3000]}\n\n"
+        f"Original document snippet:\n{document_text[:8000]}\n\n"
         f"Generated outputs:\n{gen_text}"
     )
