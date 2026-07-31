@@ -125,6 +125,15 @@ function BarChart({ rows, valueKey, labelKey, suffix = '' }) {
   )
 }
 
+function ChartShell({ title, children }) {
+  return (
+    <div className="chart-shell">
+      <h3>{title}</h3>
+      {children}
+    </div>
+  )
+}
+
 function GanttChart({ tasks }) {
   const datedTasks = asArray(tasks)
     .map((task) => ({ ...task, start: toDate(task.start_date), end: toDate(task.end_date) }))
@@ -137,26 +146,31 @@ function GanttChart({ tasks }) {
   const totalDays = Math.max(daysBetween(minDate, maxDate) + 1, 1)
 
   return (
-    <div className="gantt">
-      <div className="gantt-scale">
-        <span>{minDate.toISOString().slice(0, 10)}</span>
-        <span>{maxDate.toISOString().slice(0, 10)}</span>
-      </div>
-      {datedTasks.map((task) => {
-        const offset = (daysBetween(minDate, task.start) / totalDays) * 100
-        const width = Math.max(8, ((daysBetween(task.start, task.end) + 1) / totalDays) * 100)
-        return (
-          <div className="gantt-row" key={task.id}>
-            <span className="gantt-label">{task.id}</span>
-            <div className="gantt-track">
-              <div className={`gantt-bar ${statusClass(task.status)}`} style={{ left: `${offset}%`, width: `${width}%` }}>
-                {task.name}
+    <ChartShell title="Estimated Project Schedule">
+      <div className="gantt">
+        <div className="gantt-scale">
+          <span>{minDate.toISOString().slice(0, 10)}</span>
+          <span>{maxDate.toISOString().slice(0, 10)}</span>
+        </div>
+        {datedTasks.map((task, index) => {
+          const offset = (daysBetween(minDate, task.start) / totalDays) * 100
+          const width = Math.max(8, ((daysBetween(task.start, task.end) + 1) / totalDays) * 100)
+          return (
+            <div className="gantt-row" key={task.id}>
+              <span className="gantt-label">{task.name || task.id}</span>
+              <div className="gantt-track">
+                <div
+                  className={`gantt-bar phase-${index % 6} ${statusClass(task.status)}`}
+                  style={{ left: `${offset}%`, width: `${width}%` }}
+                >
+                  {task.duration_days ? `${task.duration_days}d` : task.id}
+                </div>
               </div>
             </div>
-          </div>
-        )
-      })}
-    </div>
+          )
+        })}
+      </div>
+    </ChartShell>
   )
 }
 
@@ -164,31 +178,95 @@ function MilestoneTimeline({ milestones }) {
   const list = asArray(milestones)
   if (!list.length) return <p className="muted">No milestones generated.</p>
   return (
-    <div className="milestone-line">
-      {list.map((milestone, index) => (
-        <div className="milestone-item" key={milestone.name || index}>
-          <span className="milestone-dot" />
-          <strong>{milestone.name}</strong>
-          <small>{milestone.date || 'Date TBD'}</small>
-        </div>
-      ))}
-    </div>
+    <ChartShell title="Milestone Plan Based on Gate Model">
+      <div className="gate-line">
+        {list.map((milestone, index) => (
+          <div className="gate-item" key={milestone.name || index}>
+            <span className="gate-label">Gate {index}</span>
+            <span className="gate-dot" />
+            <strong>{milestone.name}</strong>
+            <small>{milestone.date || 'Date TBD'}</small>
+          </div>
+        ))}
+      </div>
+    </ChartShell>
+  )
+}
+
+function CriticalPathFlow({ criticalPath, tasks }) {
+  const ids = asArray(criticalPath?.task_ids)
+  const taskMap = new Map(asArray(tasks).map((task) => [task.id, task]))
+  const pathItems = ids.length ? ids.map((id) => taskMap.get(id) || { id, name: id }) : asArray(tasks).slice(0, 6)
+  if (!pathItems.length) return <p className="muted">No critical path generated.</p>
+
+  return (
+    <ChartShell title="Critical Path Analysis">
+      <div className="critical-flow">
+        {pathItems.map((task, index) => (
+          <React.Fragment key={task.id || index}>
+            <div className="flow-node">
+              <strong>{task.id}</strong>
+              <span>{task.name || task.id}</span>
+            </div>
+            {index < pathItems.length - 1 && <span className="flow-arrow">→</span>}
+          </React.Fragment>
+        ))}
+      </div>
+      {criticalPath?.summary && <p className="chart-note">{criticalPath.summary}</p>}
+    </ChartShell>
   )
 }
 
 function DependencyMap({ dependencies }) {
   const list = asArray(dependencies)
   if (!list.length) return <p className="muted">No dependencies generated.</p>
+  const nodes = Array.from(new Set(list.flatMap((item) => [item.task_id, ...asArray(item.depends_on), ...asArray(item.blocks)]).filter(Boolean)))
   return (
-    <div className="dependency-map">
-      {list.map((item, index) => (
-        <div className="dependency-card" key={item.task_id || index}>
-          <span>{asArray(item.depends_on).join(', ') || 'Start'}</span>
-          <strong>{item.task_id}</strong>
-          <span>{asArray(item.blocks).join(', ') || 'Finish'}</span>
+    <>
+      <ChartShell title="Dependency Map">
+        <div className="node-map">
+          {nodes.slice(0, 12).map((node, index) => (
+            <div className={`map-node node-${index % 4}`} key={node}>
+              {node}
+            </div>
+          ))}
         </div>
-      ))}
-    </div>
+      </ChartShell>
+      <div className="dependency-map">
+        {list.map((item, index) => (
+          <div className="dependency-card" key={item.task_id || index}>
+            <span>{asArray(item.depends_on).join(', ') || 'Start'}</span>
+            <strong>{item.task_id}</strong>
+            <span>{asArray(item.blocks).join(', ') || 'Finish'}</span>
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
+function EffortWorkstreamChart({ rows }) {
+  const list = asArray(rows)
+  if (!list.length) return <p className="muted">No effort by workstream generated.</p>
+  const max = Math.max(...list.map((row) => Number(row.person_days || 0)), 1)
+  return (
+    <ChartShell title="Effort Estimation by Workstream">
+      <div className="vertical-bars">
+        {list.map((row, index) => {
+          const value = Number(row.person_days || 0)
+          const level = value / max > 0.66 ? 'High' : value / max > 0.33 ? 'Medium' : 'Low'
+          return (
+            <div className="vertical-bar-item" key={row.role || index}>
+              <div className={`vertical-bar level-${level.toLowerCase()}`} style={{ height: `${Math.max(18, (value / max) * 100)}%` }}>
+                <span>{level}</span>
+              </div>
+              <strong>{row.role}</strong>
+              <small>{value}d</small>
+            </div>
+          )
+        })}
+      </div>
+    </ChartShell>
   )
 }
 
@@ -196,24 +274,85 @@ function RiskMatrix({ risks }) {
   const list = asArray(risks)
   if (!list.length) return <p className="muted">No timeline risks generated.</p>
   return (
-    <div className="risk-list">
-      {list.map((risk, index) => {
-        const likelihood = Number(risk.likelihood || 3)
-        const impact = Number(risk.impact || 3)
-        const score = likelihood * impact
-        return (
-          <div className="risk-card" key={risk.risk || index}>
-            <div className="risk-score">
-              <strong>{score}</strong>
-              <span>L{likelihood} x I{impact}</span>
+    <>
+      <ChartShell title="Timeline Risk Severity">
+        <div className="severity-bars">
+          {list.map((risk, index) => {
+            const likelihood = Number(risk.likelihood || 3)
+            const impact = Number(risk.impact || 3)
+            const score = likelihood * impact
+            const severity = score >= 16 ? 'High' : score >= 8 ? 'Medium' : 'Low'
+            return (
+              <div className="severity-row" key={risk.risk || index}>
+                <span>{risk.risk || `Risk ${index + 1}`}</span>
+                <div className="severity-track">
+                  <div className={`severity-fill severity-${severity.toLowerCase()}`} style={{ width: `${Math.max(10, (score / 25) * 100)}%` }} />
+                </div>
+                <strong>{severity}</strong>
+              </div>
+            )
+          })}
+        </div>
+      </ChartShell>
+      <div className="risk-list">
+        {list.map((risk, index) => {
+          const likelihood = Number(risk.likelihood || 3)
+          const impact = Number(risk.impact || 3)
+          const score = likelihood * impact
+          return (
+            <div className="risk-card" key={risk.risk || index}>
+              <div className="risk-score">
+                <strong>{score}</strong>
+                <span>L{likelihood} x I{impact}</span>
+              </div>
+              <div>
+                <h3>{risk.risk || `Risk ${index + 1}`}</h3>
+                <p>{risk.mitigation || 'Mitigation to be confirmed.'}</p>
+              </div>
             </div>
-            <div>
-              <h3>{risk.risk || `Risk ${index + 1}`}</h3>
-              <p>{risk.mitigation || 'Mitigation to be confirmed.'}</p>
-            </div>
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
+    </>
+  )
+}
+
+function DependencySummary({ dependencies }) {
+  const list = asArray(dependencies)
+  const rows = [
+    {
+      type: 'Upstream',
+      examples: list.filter((item) => asArray(item.depends_on).length).map((item) => `${asArray(item.depends_on).join(', ')} → ${item.task_id}`),
+    },
+    {
+      type: 'Downstream',
+      examples: list.filter((item) => asArray(item.blocks).length).map((item) => `${item.task_id} → ${asArray(item.blocks).join(', ')}`),
+    },
+    {
+      type: 'Standalone',
+      examples: list.filter((item) => !asArray(item.depends_on).length && !asArray(item.blocks).length).map((item) => item.task_id),
+    },
+  ]
+  return (
+    <div className="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Dependency Type</th>
+            <th>Count</th>
+            <th>Examples</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.type}>
+              <td>{row.type}</td>
+              <td>{row.examples.length}</td>
+              <td>{row.examples.slice(0, 4).join('; ') || '-'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }
@@ -350,16 +489,12 @@ export default function App() {
             </Section>
 
             <Section title="Critical Path Analysis">
-              <KeyValueTable
-                rows={[
-                  ['Critical tasks', asArray(generated.critical_path?.task_ids)],
-                  ['Analysis', generated.critical_path?.summary || '-'],
-                ]}
-              />
+              <CriticalPathFlow criticalPath={generated.critical_path} tasks={generated.project_schedule} />
             </Section>
 
             <Section title="Dependency Map">
               <DependencyMap dependencies={generated.dependency_map} />
+              <DependencySummary dependencies={generated.dependency_map} />
             </Section>
 
             <Section title="Resource Allocation Plan">
@@ -377,7 +512,7 @@ export default function App() {
             </Section>
 
             <Section title="Effort Estimation">
-              <BarChart rows={effortByRole} labelKey="role" valueKey="person_days" suffix="d" />
+              <EffortWorkstreamChart rows={effortByRole} />
               <KeyValueTable
                 rows={[
                   ['Duration days', generated.effort_estimation?.total_duration_days || '-'],
