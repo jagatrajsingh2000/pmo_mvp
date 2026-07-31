@@ -28,7 +28,7 @@ def extract_text_from_file(path: Union[str, Path]) -> str:
         return _extract_text_csv(path)
     if suffix == ".txt":
         return path.read_text(encoding="utf-8", errors="ignore")
-    # fallback: try reading as text
+    # Last attempt for plain-text compatible uploads.
     return path.read_text(encoding="utf-8", errors="ignore")
 
 
@@ -44,7 +44,7 @@ def _extract_text_pdf(path: Path) -> str:
             except Exception:
                 continue
         combined = "\n".join(texts)
-        # If extracted text is very small, try OCR fallback for scanned PDFs
+        # If extracted text is very small, try OCR for scanned PDFs.
         if len(combined.strip()) < 100:
             try:
                 from pdf2image import convert_from_path
@@ -63,7 +63,7 @@ def _extract_text_pdf(path: Path) -> str:
                 if len(ocr_combined.strip()) > len(combined):
                     return ocr_combined
             except Exception:
-                # If pdf2image/pytesseract aren't available or fail, return what we have
+                # If pdf2image/pytesseract aren't available or fail, return what we have.
                 pass
 
         return combined
@@ -74,20 +74,32 @@ def _extract_text_pdf(path: Path) -> str:
 def _extract_text_docx(path: Path) -> str:
     try:
         import docx
+        from docx.table import Table
+        from docx.text.paragraph import Paragraph
 
         doc = docx.Document(str(path))
         parts = []
-        paragraphs = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
-        if paragraphs:
-            parts.append("Paragraphs:")
-            parts.extend(paragraphs)
+        table_index = 0
 
-        for table_index, table in enumerate(doc.tables, start=1):
-            parts.append(f"\nTable {table_index}:")
-            for row in table.rows:
-                cells = [cell.text.strip().replace("\n", " ") for cell in row.cells]
-                if any(cells):
-                    parts.append(" | ".join(cells))
+        for block in doc.element.body.iterchildren():
+            if block.tag.endswith("}p"):
+                paragraph = Paragraph(block, doc)
+                text = paragraph.text.strip()
+                if not text:
+                    continue
+                style_name = paragraph.style.name if paragraph.style else ""
+                if style_name.lower().startswith("heading"):
+                    parts.append(f"\nSection: {text}")
+                else:
+                    parts.append(text)
+            elif block.tag.endswith("}tbl"):
+                table_index += 1
+                parts.append(f"\nTable {table_index}:")
+                table = Table(block, doc)
+                for row in table.rows:
+                    cells = [cell.text.strip().replace("\n", " ") for cell in row.cells]
+                    if any(cells):
+                        parts.append(" | ".join(cells))
 
         return "\n".join(parts)
     except Exception:

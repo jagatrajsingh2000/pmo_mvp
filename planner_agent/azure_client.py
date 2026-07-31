@@ -24,15 +24,9 @@ def has_azure_config() -> bool:
     )
 
 
-def feature_fallback_enabled() -> bool:
-    value = os.environ.get("FEATURE_FALLBACK", "False")
-    return value.strip().lower() in {"1", "true", "yes", "on"}
-
-
 def planner_status() -> Dict[str, Any]:
     return {
         "azure_openai_configured": has_azure_config(),
-        "feature_fallback_enabled": feature_fallback_enabled(),
         "provider": "azure_openai" if has_azure_config() else "not_configured",
     }
 
