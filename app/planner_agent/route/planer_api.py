@@ -18,7 +18,7 @@ OUTPUT_DIR = BASE_DIR / "outputs"
 UPLOAD_DIR.mkdir(exist_ok=True)
 OUTPUT_DIR.mkdir(exist_ok=True)
 
-router = APIRouter()
+router = APIRouter(prefix="/planer")
 
 
 @router.get("/planner-status")

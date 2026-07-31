@@ -531,7 +531,7 @@ export default function App() {
     const fd = new FormData()
     fd.append('file', file)
     try {
-      const res = await fetch(`${API_BASE}/upload`, {
+      const res = await fetch(`${API_BASE}/planer/upload`, {
         method: 'POST',
         body: fd,
       })

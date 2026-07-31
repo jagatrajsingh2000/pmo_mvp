@@ -62,10 +62,10 @@ Missing Azure values, Azure API errors, invalid JSON, or incomplete planner arti
 Endpoints
 
 - `GET /health` - basic health check
-- `GET /planner-status` - shows whether Azure OpenAI is configured, without exposing secrets
-- `GET /sample-documents` - lists local documents under `sample_docs/`
-- `POST /upload` - multipart upload file field `file`; returns generated planner artifacts and review
-- `POST /plan-text` - JSON body with `text`; returns generated planner artifacts and review
+- `GET /planer/planner-status` - shows whether Azure OpenAI is configured, without exposing secrets
+- `GET /planer/sample-documents` - lists local documents under `sample_docs/`
+- `POST /planer/upload` - multipart upload file field `file`; returns generated planner artifacts and review
+- `POST /planer/plan-text` - JSON body with `text`; returns generated planner artifacts and review
 
 Note: This is an initial prototype. Files are stored in `uploads/` and outputs in `outputs/`.
 
@@ -189,7 +189,7 @@ Check OpenAI Usage
  - Start the backend and call:
 
 ```bash
-curl http://localhost:8000/planner-status
+curl http://localhost:8000/planer/planner-status
 ```
 
 Expected when Azure OpenAI is configured:
