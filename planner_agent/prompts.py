@@ -79,10 +79,41 @@ def generator_retry_prompt(document_text: str, invalid_response: Any, error: str
 
 def reviewer_prompt(document_text: str, generated: Any) -> str:
     gen_text = generated if isinstance(generated, str) else json.dumps(generated, ensure_ascii=False)
+    quality_contract = {
+        "issues": ["string"],
+        "suggestions": ["string"],
+        "confidence": "low | medium | high",
+        "quality_scores": [
+            {
+                "category": "Input Grounding",
+                "score": 0,
+                "rationale": "string",
+                "evidence": "string",
+                "improvement": "string",
+            }
+        ],
+        "overall_quality_score": 0,
+    }
+    categories = [
+        "Input Grounding",
+        "Business Accuracy",
+        "Requirements Quality",
+        "Hallucination Control",
+        "Traceability",
+        "Stakeholder Mapping",
+        "Risk Management",
+        "Technical Accuracy",
+        "BRD Completeness",
+        "Audit Readiness",
+    ]
     return (
         "You are a senior project manager reviewing generated project timeline outputs. "
         "Return exactly one valid JSON object and nothing else. "
-        "The object must contain: issues, suggestions, confidence.\n\n"
+        "Score each quality category from 0 to 100, where 100 means excellent. "
+        "Ground every score in the original document and generated output; do not invent unsupported evidence. "
+        f"The quality_scores array must contain exactly these categories: {', '.join(categories)}. "
+        "Use this JSON shape:\n"
+        f"{json.dumps(quality_contract, ensure_ascii=False, indent=2)}\n\n"
         f"Original document snippet:\n{document_text[:3000]}\n\n"
         f"Generated outputs:\n{gen_text}"
     )

@@ -54,6 +54,7 @@ def review_plan(document_text: str, generated: Dict[str, Any]) -> Dict[str, Any]
     if schedule and not any(task.get("dependencies") for task in schedule):
         issues.append("No explicit task dependencies were found; critical path is an approximation.")
 
+    quality_scores = _quality_scores(document_text, generated, bool(issues))
     return {
         "issues": issues or ["No blocking issues found in the generated first-pass plan."],
         "suggestions": suggestions
@@ -62,7 +63,35 @@ def review_plan(document_text: str, generated: Dict[str, Any]) -> Dict[str, Any]
             "Confirm external dependency dates before baselining the plan.",
         ],
         "confidence": "medium" if issues else "high",
+        "quality_scores": quality_scores,
+        "overall_quality_score": round(sum(item["score"] for item in quality_scores) / len(quality_scores)),
     }
+
+
+def _quality_scores(document_text: str, generated: Dict[str, Any], has_issues: bool) -> List[Dict[str, Any]]:
+    text = document_text.lower()
+    checks = [
+        ("Input Grounding", 78 if len(text) > 500 else 58, "Document text was extracted and used as the source for planning."),
+        ("Business Accuracy", 74 if "business" in text or "scope" in text else 60, "Business context was inferred from scope and project brief content."),
+        ("Requirements Quality", 76 if "requirement" in text or "scope" in text else 55, "Requirements are stronger when explicit functional and non-functional items are present."),
+        ("Hallucination Control", 82 if not has_issues else 66, "The local planner uses deterministic assumptions and flags missing source detail."),
+        ("Traceability", 64, "Source section and page-level traceability are not available in extracted plain text yet."),
+        ("Stakeholder Mapping", 78 if "stakeholder" in text or "manager" in text else 55, "Stakeholder quality depends on named roles and decision owners in the BRD."),
+        ("Risk Management", 76 if generated.get("timeline_risks") else 50, "Timeline risks and mitigations were generated for review."),
+        ("Technical Accuracy", 68, "Technical accuracy needs SME validation against architecture and integration constraints."),
+        ("BRD Completeness", 72 if "milestone" in text and "dependency" in text else 58, "Completeness depends on scope, milestones, resources, and dependencies."),
+        ("Audit Readiness", 62, "Audit readiness will improve when ingestion captures source section and page references."),
+    ]
+    return [
+        {
+            "category": category,
+            "score": score,
+            "rationale": rationale,
+            "evidence": "Derived from extracted document text and generated planner artifacts.",
+            "improvement": "Add explicit source references, owners, acceptance criteria, dates, and approval gates where missing.",
+        }
+        for category, score, rationale in checks
+    ]
 
 
 def _normalize(text: str) -> str:

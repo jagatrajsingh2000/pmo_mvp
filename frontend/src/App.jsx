@@ -25,6 +25,12 @@ function exportPdf() {
   window.print()
 }
 
+function scoreTone(score) {
+  if (score >= 80) return 'strong'
+  if (score >= 60) return 'watch'
+  return 'weak'
+}
+
 function Section({ title, subtitle, children, wide = false }) {
   return (
     <section className={`panel ${wide ? 'wide' : ''}`}>
@@ -371,11 +377,82 @@ function ReportActions({ filename }) {
   )
 }
 
+function ScoreGauge({ label, score }) {
+  const value = Math.max(0, Math.min(100, Number(score || 0)))
+  return (
+    <div className={`score-card ${scoreTone(value)}`}>
+      <div className="score-ring" style={{ '--score': `${value * 3.6}deg` }}>
+        <strong>{value}</strong>
+      </div>
+      <span>{label}</span>
+    </div>
+  )
+}
+
+function QualityScoresTab({ review }) {
+  const scores = asArray(review?.quality_scores)
+  const overall = Number(review?.overall_quality_score || 0)
+  if (!scores.length) {
+    return (
+      <div className="workspace">
+        <Section title="Quality Scores" wide>
+          <p className="muted">Quality scores were not returned by the reviewer.</p>
+        </Section>
+      </div>
+    )
+  }
+
+  return (
+    <div className="workspace">
+      <Section title="Quality Score Summary" subtitle="Independent audit scoring for the generated planning output." wide>
+        <div className="quality-hero">
+          <ScoreGauge label="Overall Quality" score={overall} />
+          <div className="quality-grid">
+            {scores.map((item) => (
+              <ScoreGauge key={item.category} label={item.category} score={item.score} />
+            ))}
+          </div>
+        </div>
+      </Section>
+
+      <Section title="Quality Audit Details" wide>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Score</th>
+                <th>Rationale</th>
+                <th>Evidence</th>
+                <th>Improvement</th>
+              </tr>
+            </thead>
+            <tbody>
+              {scores.map((item) => (
+                <tr key={item.category}>
+                  <td>{item.category}</td>
+                  <td>
+                    <span className={`score-pill ${scoreTone(Number(item.score || 0))}`}>{item.score}</span>
+                  </td>
+                  <td>{item.rationale || '-'}</td>
+                  <td>{item.evidence || '-'}</td>
+                  <td>{item.improvement || '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Section>
+    </div>
+  )
+}
+
 export default function App() {
   const [file, setFile] = useState(null)
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState('report')
   const generated = result?.generated || {}
   const review = result?.review || {}
 
@@ -407,6 +484,7 @@ export default function App() {
       const data = contentType.includes('application/json') ? await res.json() : { detail: await res.text() }
       if (!res.ok) throw new Error(data.detail || 'Upload failed')
       setResult(data)
+      setActiveTab('report')
     } catch (err) {
       console.error(err)
       setError(err.message || 'Upload failed')
@@ -446,7 +524,19 @@ export default function App() {
       {result && (
         <div className="report">
           <ReportActions filename={generated.project_name || result.filename} />
-          <div className="workspace">
+          <div className="tabs no-print">
+            <button className={activeTab === 'report' ? 'active' : ''} type="button" onClick={() => setActiveTab('report')}>
+              PMO Report
+            </button>
+            <button className={activeTab === 'quality' ? 'active' : ''} type="button" onClick={() => setActiveTab('quality')}>
+              Quality Scores
+            </button>
+          </div>
+
+          {activeTab === 'quality' ? (
+            <QualityScoresTab review={review} />
+          ) : (
+            <div className="workspace">
             <Section title="Project Summary">
               <KeyValueTable
                 rows={[
@@ -532,7 +622,8 @@ export default function App() {
               <h3>Suggestions</h3>
               <ListBlock items={review.suggestions} />
             </Section>
-          </div>
+            </div>
+          )}
         </div>
       )}
     </main>

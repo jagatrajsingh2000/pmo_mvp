@@ -78,6 +78,7 @@ Planner agent
 Frontend
  - A React frontend (Vite) is in `frontend/`. Run it in a second terminal while the backend is running.
  - The report includes visual charts for schedule, milestones, dependencies, resources, effort, and risks.
+ - The generated output has a separate `Quality Scores` tab for input grounding, business accuracy, requirements quality, hallucination control, traceability, stakeholder mapping, risk management, technical accuracy, BRD completeness, and audit readiness.
  - Use the `Export PDF` button after generation. It opens the browser print dialog; choose `Save as PDF` or `Microsoft Print to PDF`.
 
 macOS / Linux:

@@ -22,9 +22,11 @@ def _validate_generated(generated: Dict[str, Any]) -> None:
 def _validate_review(review: Dict[str, Any]) -> None:
     if not isinstance(review, dict):
         raise RuntimeError("Azure OpenAI reviewer response must be a JSON object.")
-    missing = [key for key in ("issues", "suggestions", "confidence") if key not in review]
+    missing = [key for key in ("issues", "suggestions", "confidence", "quality_scores", "overall_quality_score") if key not in review]
     if missing:
         raise RuntimeError("Azure OpenAI reviewer response missing keys: " + ", ".join(missing))
+    if not isinstance(review.get("quality_scores"), list):
+        raise RuntimeError("Azure OpenAI reviewer quality_scores must be an array.")
 
 
 def _generate_with_ai(document_text: str) -> Dict[str, Any]:
