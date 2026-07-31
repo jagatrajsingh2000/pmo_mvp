@@ -21,6 +21,23 @@ function statusClass(status = '') {
   return status.toLowerCase().replace(/\s+/g, '-') || 'not-started'
 }
 
+function derivedTaskStatus(task) {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const start = toDate(task?.start_date)
+  const explicit = task?.status || 'Not Started'
+
+  if (explicit === 'Done' || explicit === 'At Risk') return explicit
+  if (start && start <= today) return 'In Progress'
+  return explicit
+}
+
+function taskLabel(taskMap, taskId) {
+  const task = taskMap.get(taskId)
+  if (!task) return taskId
+  return `${taskId} - ${task.name || taskId}`
+}
+
 function exportPdf() {
   window.print()
 }
@@ -76,17 +93,56 @@ function ScheduleTable({ tasks }) {
           </tr>
         </thead>
         <tbody>
-          {asArray(tasks).map((task) => (
-            <tr key={task.id || task.name}>
-              <td>{task.id}</td>
-              <td>{task.name}</td>
+          {asArray(tasks).map((task) => {
+            const status = derivedTaskStatus(task)
+            return (
+              <tr key={task.id || task.name}>
+                <td>{task.id}</td>
+                <td>{task.name}</td>
+                <td>
+                  <span className={`status ${statusClass(status)}`}>{status}</span>
+                </td>
+                <td>{task.owner_role || '-'}</td>
+                <td>{task.start_date || '-'}</td>
+                <td>{task.end_date || '-'}</td>
+                <td>{asArray(task.dependencies).join(', ') || '-'}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function SprintTable({ sprints, tasks }) {
+  const taskMap = new Map(asArray(tasks).map((task) => [task.id, task]))
+  const list = asArray(sprints)
+  if (!list.length) return <p className="muted">No sprints generated.</p>
+  return (
+    <div className="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Sprint</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Tasks</th>
+          </tr>
+        </thead>
+        <tbody>
+          {list.map((item) => (
+            <tr key={item.sprint || `${item.start_date}-${item.end_date}`}>
+              <td><strong>Sprint {item.sprint || '-'}</strong></td>
+              <td>{item.start_date || 'TBD'}</td>
+              <td>{item.end_date || 'TBD'}</td>
               <td>
-                <span className={`status ${statusClass(task.status)}`}>{task.status || 'Not Started'}</span>
+                <div className="task-chip-list">
+                  {asArray(item.task_ids).map((taskId) => (
+                    <span className="task-chip" key={taskId}>{taskLabel(taskMap, taskId)}</span>
+                  ))}
+                </div>
               </td>
-              <td>{task.owner_role || '-'}</td>
-              <td>{task.start_date || '-'}</td>
-              <td>{task.end_date || '-'}</td>
-              <td>{asArray(task.dependencies).join(', ') || '-'}</td>
             </tr>
           ))}
         </tbody>
@@ -166,7 +222,7 @@ function GanttChart({ tasks }) {
               <span className="gantt-label">{task.name || task.id}</span>
               <div className="gantt-track">
                 <div
-                  className={`gantt-bar phase-${index % 6} ${statusClass(task.status)}`}
+                  className={`gantt-bar phase-${index % 6} ${statusClass(derivedTaskStatus(task))}`}
                   style={{ left: `${offset}%`, width: `${width}%` }}
                 >
                   {task.duration_days ? `${task.duration_days}d` : task.id}
@@ -185,12 +241,11 @@ function MilestoneTimeline({ milestones }) {
   if (!list.length) return <p className="muted">No milestones generated.</p>
   return (
     <ChartShell title="Milestone Plan Based on Gate Model">
-      <div className="gate-line">
+      <div className="gate-grid">
         {list.map((milestone, index) => (
           <div className="gate-item" key={milestone.name || index}>
-            <span className="gate-label">Gate {index}</span>
-            <span className="gate-dot" />
-            <strong>{milestone.name}</strong>
+            <span className="gate-index">Gate {index}</span>
+            <strong>{milestone.name || `Milestone ${index + 1}`}</strong>
             <small>{milestone.date || 'Date TBD'}</small>
           </div>
         ))}
@@ -566,12 +621,7 @@ export default function App() {
             </Section>
 
             <Section title="Sprint Plan">
-              <ListBlock
-                items={generated.sprint_plan}
-                render={(item) =>
-                  `Sprint ${item.sprint}: ${item.start_date || 'TBD'} to ${item.end_date || 'TBD'} (${asArray(item.task_ids).join(', ')})`
-                }
-              />
+              <SprintTable sprints={generated.sprint_plan} tasks={generated.project_schedule} />
             </Section>
 
             <Section title="Milestone Plan">

@@ -236,6 +236,10 @@ th {
   background: #ff7a7a;
 }
 
+.status.not-started {
+  background: #e8efec;
+}
+
 .bar-chart {
   display: grid;
   gap: 10px;
@@ -367,49 +371,61 @@ th {
   background: #1d64c8;
 }
 
-.gate-line {
-  position: relative;
+.gate-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 18px;
-  padding: 70px 10px 18px;
-}
-
-.gate-line::before {
-  position: absolute;
-  right: 28px;
-  bottom: 54px;
-  left: 28px;
-  height: 4px;
-  content: "";
-  background: #184463;
-  border-radius: 999px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  padding: 6px;
 }
 
 .gate-item {
-  position: relative;
   display: grid;
-  justify-items: center;
-  gap: 4px;
-  text-align: center;
+  grid-template-rows: auto minmax(44px, auto) auto;
+  gap: 8px;
+  min-height: 132px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid #cad8d4;
+  border-left: 5px solid #184463;
+  border-radius: 8px;
 }
 
-.gate-dot {
-  z-index: 1;
-  width: 14px;
-  height: 14px;
-  margin: 12px 0;
+.gate-index {
+  width: fit-content;
+  padding: 3px 8px;
+  color: #ffffff;
   background: #184463;
-  border-radius: 50%;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 
-.gate-label {
-  color: #111c20;
-  font-weight: 700;
+.gate-item strong {
+  overflow-wrap: anywhere;
+  line-height: 1.2;
 }
 
 .gate-item small {
   color: #5d6b66;
+  font-weight: 700;
+}
+
+.task-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.task-chip {
+  max-width: 100%;
+  padding: 4px 8px;
+  color: #21413a;
+  background: #edf5f2;
+  border: 1px solid #cbdad5;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .critical-flow {
