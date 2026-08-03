@@ -597,7 +597,7 @@ export default function App() {
                 rows={[
                   ['Project', generated.project_name || result.filename],
                   ['Source file', result.filename],
-                  ['Planner mode', generated.planning_mode || 'azure_openai'],
+                  ['Planner mode', generated.planning_mode || 'agno_azure_openai'],
                   ['Review confidence', review.confidence || '-'],
                 ]}
               />

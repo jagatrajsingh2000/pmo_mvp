@@ -97,7 +97,7 @@ npm install
 npm run dev
 ```
 
-Open the frontend at `http://localhost:5173`. It expects the backend at `http://localhost:8000`.
+Open the frontend at `http://localhost:3000`. It expects the backend at `http://localhost:8000`.
 
 Stopping Servers And Port Conflicts
 
@@ -119,19 +119,19 @@ netstat -ano | findstr :8000
 taskkill /PID <PID> /F
 ```
 
-If the frontend port `5173` is already in use, stop the process using that port.
+If the frontend port `3000` is already in use, stop the process using that port.
 
 macOS / Linux:
 
 ```bash
-lsof -ti :5173
-kill -9 $(lsof -ti :5173)
+lsof -ti :3000
+kill -9 $(lsof -ti :3000)
 ```
 
 Windows PowerShell:
 
 ```powershell
-netstat -ano | findstr :5173
+netstat -ano | findstr :3000
 taskkill /PID <PID> /F
 ```
 
