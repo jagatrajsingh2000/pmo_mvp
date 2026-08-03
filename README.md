@@ -2,7 +2,7 @@
 
 FastAPI + React app that accepts project documents (PDF, XLSX, CSV, DOCX, TXT), extracts text locally, and generates PMO timeline artifacts: WBS, project schedule, sprint plan, milestone plan, critical path, dependency map, resource allocation, timeline risks, effort estimates, and schedule optimization recommendations.
 
-The planner uses Azure OpenAI through the official OpenAI Python SDK. Azure OpenAI configuration is required for all planner artifact generation.
+The planner uses Agno with Azure OpenAI. Azure OpenAI configuration is required for all planner artifact generation.
 
 Quick Start
 
@@ -72,7 +72,7 @@ Note: This is an initial prototype. Files are stored in `uploads/` and outputs i
 Planner agent
  - FastAPI planner routes live in `app/planner_agent/route/planer_api.py`.
  - Upload saving and document text extraction helpers live in `app/planner_agent/route/utils.py`.
- - Azure OpenAI and LangGraph agent code lives in `app/planner_agent/agent/`.
+ - Agno and Azure OpenAI agent code lives in `app/planner_agent/agent/`.
  - Shared prompt contracts live in `app/planner_agent/agent/prompts.py` to keep generation and review DRY.
 
 Frontend
@@ -163,11 +163,11 @@ Tesseract OCR
 brew install tesseract
 ```
 
-LangGraph integration
- - The project includes a LangGraph adapter at `app/planner_agent/agent/langraph_adapter.py`.
- - You do not start LangGraph as a separate server. Start the FastAPI backend; the backend runs the LangGraph planner pipeline inside the Python process.
- - `langgraph` is included in `requirements.txt`, so it is installed when you install backend dependencies in `.venv`.
- - To start the backend with LangGraph available:
+Agno integration
+ - The project includes an Agno adapter at `app/planner_agent/agent/agno_adapter.py`.
+ - You do not start Agno as a separate server. Start the FastAPI backend; the backend runs the Agno planner pipeline inside the Python process.
+ - `agno` is included in `requirements.txt`, so it is installed when you install backend dependencies in `.venv`.
+ - To start the backend with Agno available:
 
 macOS / Linux:
 
@@ -183,7 +183,7 @@ Windows PowerShell:
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-If `langgraph` is not installed, the backend fails clearly instead of running a partial planner pipeline. Azure OpenAI is required.
+If `agno` is not installed, the backend fails clearly instead of running a partial planner pipeline. Azure OpenAI is required.
 
 Check OpenAI Usage
  - Start the backend and call:
@@ -197,7 +197,7 @@ Expected when Azure OpenAI is configured:
 ```json
 {
   "azure_openai_configured": true,
-  "provider": "azure_openai"
+  "provider": "agno_azure_openai"
 }
 ```
 
@@ -206,12 +206,12 @@ Debug Upload Failures
    - upload received
    - upload saved
    - text extraction completed
-   - LangGraph pipeline started
+   - Agno pipeline started
    - generate node started/completed
    - Azure OpenAI request started/completed
    - review node started/completed
    - output saved
  - If upload fails, the frontend shows the backend error message in an `Upload Failed` panel.
- - The upload fails if Azure OpenAI is not configured, Azure returns an error, LangGraph is unavailable, or the AI response does not include all required planner artifact keys.
- - Generator requests use Azure OpenAI JSON mode with `response_format={"type":"json_object"}`.
+ - The upload fails if Azure OpenAI is not configured, Azure returns an error, Agno is unavailable, or the AI response does not include all required planner artifact keys.
+ - Generator requests use Agno with Azure OpenAI and strict JSON-only prompts.
  - If the first AI response is invalid JSON or misses required artifact keys, the generator makes one stricter AI repair request. If that also fails, the upload fails instead of rendering incomplete data.

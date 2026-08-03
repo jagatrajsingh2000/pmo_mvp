@@ -11,5 +11,4 @@ openpyxl
 pdf2image
 pytesseract
 Pillow
-# optional: LangGraph integration (install when ready)
-langgraph
+agno

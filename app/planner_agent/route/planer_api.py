@@ -6,13 +6,13 @@ from pathlib import Path
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
-from app.planner_agent import run_pipeline_langraph
+from app.planner_agent import run_pipeline_agno
 from app.planner_agent.agent.azure_client import planner_status
 from app.planner_agent.route.utils import extract_text_from_file, save_upload_file
 
 logger = logging.getLogger(__name__)
 
-BASE_DIR = Path(__file__).resolve().parents[2]
+BASE_DIR = Path(__file__).resolve().parents[3]
 UPLOAD_DIR = BASE_DIR / "uploads"
 OUTPUT_DIR = BASE_DIR / "outputs"
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -30,7 +30,7 @@ def get_planner_status():
 
 def _build_response(file_id: str, filename: str, text: str):
     logger.info("Pipeline starting file_id=%s filename=%s text_chars=%s", file_id, filename, len(text))
-    generated, review = run_pipeline_langraph(text)
+    generated, review = run_pipeline_agno(text)
     response = {
         "file_id": file_id,
         "filename": filename,
