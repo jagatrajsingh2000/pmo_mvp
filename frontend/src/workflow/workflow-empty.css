@@ -1,0 +1,33 @@
+.empty-report {
+  min-height: 230px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  color: #4a5d57;
+  background: #f8fbfa;
+  border: 1px dashed #b9cdc6;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.empty-report h3,
+.empty-report p {
+  margin: 0;
+}
+
+.workflow-side-actions {
+  position: fixed;
+  right: 18px;
+  top: 42%;
+  z-index: 20;
+}
+
+.workflow-side-actions button {
+  writing-mode: vertical-rl;
+  min-width: 48px;
+  min-height: 190px;
+  padding: 16px 10px;
+  background: #ec2c6f;
+  box-shadow: 0 14px 32px rgba(236, 44, 111, 0.24);
+}

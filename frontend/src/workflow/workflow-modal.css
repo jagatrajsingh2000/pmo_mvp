@@ -1,0 +1,264 @@
+.agent-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgba(12, 18, 16, 0.58);
+  backdrop-filter: blur(4px);
+}
+
+.agent-modal {
+  display: grid;
+  gap: 16px;
+  width: min(1120px, 100%);
+  max-height: min(88vh, 920px);
+  overflow: auto;
+  padding: 20px;
+  color: #17211d;
+  background: #ffffff;
+  border: 1px solid #d9e4df;
+  border-radius: 8px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.26);
+}
+
+.agent-modal-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: start;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #dfe8e4;
+}
+
+.agent-modal-header h2 {
+  margin: 4px 0 6px;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  letter-spacing: 0;
+}
+
+.agent-modal-header span {
+  display: block;
+  color: #5c6b66;
+  line-height: 1.5;
+}
+
+.agent-modal-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.agent-modal-actions .ghost-button {
+  color: #24443d;
+  background: #e6f2ee;
+  border: 1px solid #bcd1ca;
+}
+
+.agent-modal-meta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.agent-modal-meta div {
+  min-height: 76px;
+  padding: 12px;
+  background: #f6faf8;
+  border: 1px solid #dbe5e1;
+  border-radius: 8px;
+}
+
+.agent-modal-meta small,
+.agent-modal-meta strong {
+  display: block;
+}
+
+.agent-modal-meta small {
+  color: #64756f;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.agent-modal-meta strong {
+  margin-top: 5px;
+  color: #17211d;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.agent-handoff-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.agent-handoff-panel div {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  background: #f9fbfa;
+  border: 1px solid #dbe5e1;
+  border-radius: 8px;
+}
+
+.agent-handoff-panel small {
+  color: #2f6f62;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.agent-handoff-panel header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.agent-handoff-panel button {
+  min-height: 34px;
+  padding: 0 10px;
+  color: #ffffff;
+  background: #2f6f62;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.76rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.agent-handoff-panel pre {
+  max-height: 260px;
+  overflow: auto;
+  margin: 0;
+  padding: 12px;
+  color: #e7f3ef;
+  background: #17211d;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.agent-output-panel {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  background: #f6faf8;
+  border: 1px solid #dbe5e1;
+  border-radius: 8px;
+}
+
+.agent-output-panel header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.agent-output-panel small,
+.agent-output-panel strong,
+.agent-output-panel span,
+.agent-output-panel b {
+  display: block;
+}
+
+.agent-output-panel small {
+  color: #2f6f62;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.agent-output-panel strong {
+  margin-top: 4px;
+  color: #17211d;
+  overflow-wrap: anywhere;
+}
+
+.agent-output-panel button {
+  min-height: 40px;
+  padding: 0 14px;
+  color: #ffffff;
+  background: #ec2c6f;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.agent-document-card {
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #d8e4df;
+  border-left: 5px solid #2f6f62;
+  border-radius: 8px;
+}
+
+.agent-document-card span {
+  color: #63746e;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.agent-document-card b {
+  margin-top: 5px;
+  color: #17211d;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.agent-document-card p {
+  margin: 6px 0 0;
+  color: #52635e;
+}
+
+.agent-output-panel pre {
+  max-height: 360px;
+  overflow: auto;
+  margin: 0;
+  padding: 12px;
+  color: #e7f3ef;
+  background: #17211d;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.agent-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.agent-kpis div {
+  min-height: 64px;
+  padding: 10px;
+  background: #f4f8f6;
+  border: 1px solid #dfe8e4;
+  border-radius: 6px;
+}
+
+.agent-kpis b,
+.agent-kpis small {
+  display: block;
+}
+
+.agent-kpis b {
+  color: #12352e;
+  font-size: 1.15rem;
+}
+
+.agent-kpis small {
+  margin-top: 3px;
+  color: #66736f;
+  font-size: 0.72rem;
+  font-weight: 800;
+}

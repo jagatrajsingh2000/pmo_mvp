@@ -1,0 +1,205 @@
+.agent-report-card pre,
+.visual-json-report pre {
+  max-height: 430px;
+  overflow: auto;
+  margin: 0;
+  padding: 14px;
+  color: #e7f3ef;
+  background: #17211d;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.visual-json-report {
+  display: grid;
+  gap: 14px;
+}
+
+.json-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.json-facts div,
+.json-visual-block {
+  background: #f6faf8;
+  border: 1px solid #dbe5e1;
+  border-radius: 8px;
+}
+
+.json-facts div {
+  min-height: 72px;
+  padding: 10px;
+}
+
+.json-facts small {
+  display: block;
+  color: #64756f;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.json-facts strong {
+  display: block;
+  margin-top: 4px;
+  color: #17211d;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.json-visual-block {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.json-visual-block h4 {
+  margin: 0;
+  color: #25433c;
+  font-size: 0.95rem;
+}
+
+.mini-bars,
+.workflow-timeline-chart {
+  display: grid;
+  gap: 8px;
+}
+
+.mini-bar-row,
+.workflow-timeline-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.8fr) minmax(140px, 1.4fr) 54px;
+  gap: 10px;
+  align-items: center;
+}
+
+.workflow-timeline-row {
+  grid-template-columns: minmax(120px, 0.8fr) minmax(140px, 1.4fr) minmax(96px, 0.7fr);
+}
+
+.mini-bar-row span,
+.workflow-timeline-row span,
+.workflow-timeline-row small {
+  color: #40554f;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.mini-bar-row div,
+.workflow-timeline-row div {
+  overflow: hidden;
+  height: 24px;
+  background: #dde9e5;
+  border-radius: 6px;
+}
+
+.mini-bar-row i,
+.workflow-timeline-row i {
+  display: block;
+  height: 100%;
+  min-width: 18px;
+  color: #ffffff;
+  background: #2f6f62;
+  border-radius: inherit;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 24px;
+  text-align: center;
+}
+
+.workflow-timeline-row i {
+  background: #ec2c6f;
+}
+
+.mini-bar-row b {
+  color: #17211d;
+  font-size: 0.84rem;
+}
+
+.workflow-dependency-map {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.workflow-dependency-edge {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+}
+
+.workflow-dependency-edge span {
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  color: #18342e;
+  background: #eaf3ef;
+  border: 1px solid #c9dcd5;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.workflow-dependency-edge b {
+  color: #ec2c6f;
+  font-size: 0.72rem;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.visual-table-wrap {
+  overflow-x: auto;
+}
+
+.visual-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.visual-table th,
+.visual-table td {
+  padding: 9px;
+  border: 1px solid #d2dfda;
+  text-align: left;
+  vertical-align: top;
+}
+
+.visual-table th {
+  color: #203d36;
+  background: #dcebe6;
+}
+
+.visual-table td {
+  color: #24342f;
+  background: #ffffff;
+  overflow-wrap: anywhere;
+}
+
+.raw-json-details {
+  background: #f9fbfa;
+  border: 1px solid #dbe5e1;
+  border-radius: 8px;
+}
+
+.raw-json-details summary {
+  padding: 10px 12px;
+  color: #2f6f62;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.raw-json-details pre {
+  border-radius: 0 0 8px 8px;
+}
