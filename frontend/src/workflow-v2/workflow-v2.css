@@ -309,7 +309,7 @@
 
 .v2-action-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px) 130px;
+  grid-template-columns: minmax(0, 1fr) repeat(2, minmax(160px, 220px)) 130px;
   gap: 16px;
 }
 

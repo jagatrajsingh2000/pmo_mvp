@@ -4,7 +4,7 @@ import { AgentCard, FlowBar, ResultModal } from './components'
 import { AGENTS, DEFAULT_SOURCE, DEMO_LOGIN } from './constants'
 import { createHandoffArtifacts, groupArtifactsByType, requestFileWithArtifacts, requestFilesWithArtifactGroups } from './handoffArtifacts'
 import { StructuredResult } from './resultRenderer'
-import { downloadCombinedReportHtml } from './reportExport'
+import { downloadCombinedReportHtml, printCombinedReportPdf } from './reportExport'
 import { createDefaultSourceFile } from './utils'
 import './workflow-v2.css'
 
@@ -66,6 +66,11 @@ export default function WorkflowV2Page() {
   function downloadCombinedReport() {
     if (!canDownloadCombined) return
     downloadCombinedReportHtml(combinedReportRef.current?.innerHTML || '')
+  }
+
+  function downloadCombinedPdf() {
+    if (!canDownloadCombined) return
+    printCombinedReportPdf(combinedReportRef.current?.innerHTML || '')
   }
 
   async function runMeasured(id, inputFiles, task) {
@@ -193,7 +198,10 @@ export default function WorkflowV2Page() {
               {running ? 'Running Workflow' : 'Run Workflow'}
             </button>
             <button type="button" className="v2-secondary v2-combined-download" onClick={downloadCombinedReport} disabled={!canDownloadCombined || running}>
-              Download Combined Report
+              Combined HTML
+            </button>
+            <button type="button" className="v2-secondary v2-combined-download" onClick={downloadCombinedPdf} disabled={!canDownloadCombined || running}>
+              Combined PDF
             </button>
             <button type="button" className="v2-secondary" onClick={useDefaultSource} disabled={running}>
               Reset

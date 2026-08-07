@@ -539,6 +539,10 @@ export function downloadCombinedReportHtml(html) {
   URL.revokeObjectURL(url)
 }
 
+export function printCombinedReportPdf(html) {
+  printReportPdf({ title: 'Combined PMO Workflow Report' }, html)
+}
+
 export function printReportPdf(agent, html) {
   const reportWindow = window.open('', '_blank')
   if (!reportWindow) {
