@@ -1,6 +1,5 @@
 import React from 'react'
 import { StructuredResult } from './resultRenderer'
-import { fileBrief, getPayloadSize, resultSummary } from './utils'
 
 export function FlowBar({ agents, steps, selectedId, onSelect }) {
   return (
@@ -28,12 +27,11 @@ export function FlowBar({ agents, steps, selectedId, onSelect }) {
 
 export function AgentCard({ agent, state, output, selected, onOpen }) {
   const status = state?.status || 'queued'
+  const completion = completionState(status, Boolean(output))
   return (
-    <button
+    <article
       id={`workflow-v2-card-${agent.id}`}
-      type="button"
       className={`v2-agent-card ${status} ${selected ? 'selected' : ''}`}
-      onClick={onOpen}
     >
       <div className="v2-card-top">
         <span className="v2-card-number">{shortAgentTitle(agent.title)}</span>
@@ -41,27 +39,24 @@ export function AgentCard({ agent, state, output, selected, onOpen }) {
       </div>
       <h2>{agent.title}</h2>
       <p>{agent.summary}</p>
-      <dl>
+      <div className="v2-card-completion">
         <div>
-          <dt>Stage</dt>
-          <dd>Runs after {agent.after || 'source intake'}</dd>
+          <span>Completion</span>
+          <strong>{completion.label}</strong>
         </div>
-        <div>
-          <dt>Input</dt>
-          <dd>{agent.input}</dd>
+        <div className="v2-card-progress" aria-label={`${completion.percent}% complete`}>
+          <span style={{ width: `${completion.percent}%` }} />
         </div>
-        <div>
-          <dt>Result</dt>
-          <dd>{output ? `${getPayloadSize(output.data)} output` : state?.detail || 'Waiting'}</dd>
-        </div>
-      </dl>
-    </button>
+      </div>
+      <button type="button" className="v2-card-action" onClick={onOpen} disabled={!output}>
+        {output ? 'Open Report' : completion.button}
+      </button>
+    </article>
   )
 }
 
 export function ResultModal({ agent, output, onClose }) {
   if (!agent || !output) return null
-  const summaryRows = resultSummary(output.data)
   return (
     <div className="v2-modal-backdrop" role="presentation" onMouseDown={onClose}>
       <section className="v2-modal" role="dialog" aria-modal="true" aria-labelledby="v2-modal-title" onMouseDown={(event) => event.stopPropagation()}>
@@ -73,35 +68,6 @@ export function ResultModal({ agent, output, onClose }) {
           <button type="button" className="v2-close" onClick={onClose}>Close</button>
         </header>
 
-        <div className="v2-modal-meta">
-          <InfoBox label="Status" value={output.status} />
-          <InfoBox label="Elapsed" value={output.elapsed || '-'} />
-          <InfoBox label="Agent" value={agent.title} />
-          <InfoBox label="Payload" value={getPayloadSize(output.data)} />
-        </div>
-
-        <section className="v2-modal-section">
-          <h3>Inputs</h3>
-          <div className="v2-file-list">
-            {output.inputFiles?.length ? (
-              output.inputFiles.map((file) => <FilePill key={`${file.name}-${file.size}`} file={file} />)
-            ) : (
-              <span className="v2-muted">No file metadata available.</span>
-            )}
-          </div>
-        </section>
-
-        <section className="v2-modal-section">
-          <h3>Result Overview</h3>
-          <div className="v2-result-grid">
-            {summaryRows.length ? (
-              summaryRows.map(([label, value]) => <InfoBox key={label} label={label} value={value} />)
-            ) : (
-              <span className="v2-muted">No summary fields available.</span>
-            )}
-          </div>
-        </section>
-
         <section className="v2-modal-section">
           <h3>Agent Output</h3>
           <StructuredResult data={output.data} />
@@ -111,30 +77,18 @@ export function ResultModal({ agent, output, onClose }) {
   )
 }
 
-function InfoBox({ label, value }) {
-  return (
-    <div className="v2-info-box">
-      <span>{label}</span>
-      <strong>{String(value ?? '-')}</strong>
-    </div>
-  )
-}
-
-function FilePill({ file }) {
-  const brief = fileBrief(file)
-  return (
-    <span className="v2-file-pill">
-      {brief?.name || 'file'}
-      <small>{brief?.size || '-'}</small>
-    </span>
-  )
-}
-
 function statusLabel(status) {
   if (status === 'done') return 'Complete'
   if (status === 'running') return 'Running'
   if (status === 'failed') return 'Failed'
   return 'Queued'
+}
+
+function completionState(status, hasOutput) {
+  if (hasOutput || status === 'done') return { label: '100% complete', percent: 100, button: 'Open Report' }
+  if (status === 'running') return { label: 'In progress', percent: 58, button: 'Running' }
+  if (status === 'failed') return { label: 'Needs attention', percent: 100, button: 'Failed' }
+  return { label: 'Waiting to start', percent: 0, button: 'Waiting' }
 }
 
 function shortAgentTitle(title) {

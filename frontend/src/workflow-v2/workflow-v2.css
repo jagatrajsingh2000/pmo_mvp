@@ -387,10 +387,11 @@
 }
 
 .v2-agent-card {
+  display: flex;
+  flex-direction: column;
   min-height: 288px;
   padding: 16px;
   color: inherit;
-  cursor: pointer;
   text-align: left;
   background: #ffffff;
   border: 1px solid #dfe4df;
@@ -459,34 +460,87 @@
 }
 
 .v2-agent-card p {
-  min-height: 86px;
+  flex: 1;
   margin: 0 0 14px;
   color: #5a615a;
   line-height: 1.42;
 }
 
-.v2-agent-card dl {
+.v2-card-completion {
   display: grid;
-  gap: 9px;
-  margin: 0;
+  gap: 10px;
+  margin-top: auto;
+  border-top: 1px solid #edf0ed;
+  padding-top: 14px;
 }
 
-.v2-agent-card div {
-  min-width: 0;
+.v2-card-completion div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
 }
 
-.v2-agent-card dt {
+.v2-card-completion span {
   color: #6a706a;
   font-size: 11px;
   font-weight: 900;
   text-transform: uppercase;
 }
 
-.v2-agent-card dd {
-  margin: 2px 0 0;
+.v2-card-completion strong {
   color: #252925;
   font-size: 13px;
-  overflow-wrap: anywhere;
+  font-weight: 900;
+}
+
+.v2-card-progress {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #edf1ed;
+}
+
+.v2-card-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #ffd83d;
+  transition: width 220ms ease;
+}
+
+.v2-agent-card.done .v2-card-progress span {
+  background: #151715;
+}
+
+.v2-agent-card.failed .v2-card-progress span {
+  background: #bd3327;
+}
+
+.v2-card-action {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 14px;
+  border: 1px solid #151715;
+  border-radius: 8px;
+  background: #151715;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 900;
+  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+}
+
+.v2-card-action:hover:not(:disabled) {
+  box-shadow: 0 12px 24px rgba(21, 23, 21, 0.16);
+  transform: translateY(-1px);
+}
+
+.v2-card-action:disabled {
+  border-color: #d7ddd7;
+  background: #f0f3f0;
+  color: #687068;
+  cursor: not-allowed;
 }
 
 .v2-modal-backdrop {
