@@ -3,6 +3,7 @@ from typing import Any, Dict
 
 from app.common.agent_runtime import generate_required_json
 
+from .costing import apply_standard_hourly_rate
 from .prompts import BUDGET_REQUIRED_KEYS, budget_prompt, budget_repair_prompt
 
 logger = logging.getLogger(__name__)
@@ -27,5 +28,11 @@ def generate_budget(document_text: str) -> Dict[str, Any]:
         validator=_validate_budget,
         max_tokens=12000,
     )
-    logger.info("Budget agent completed workstreams=%s resources=%s", len(result.get("workstream_estimates", [])), len(result.get("resource_costs", [])))
+    result = apply_standard_hourly_rate(result)
+    logger.info(
+        "Budget agent completed workstreams=%s resources=%s total_cost=%s",
+        len(result.get("workstream_estimates", [])),
+        len(result.get("resource_costs", [])),
+        (result.get("cost_summary") or {}).get("total_estimated_cost"),
+    )
     return result

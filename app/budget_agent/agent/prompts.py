@@ -73,7 +73,10 @@ def budget_prompt(document_text: str) -> str:
         "Create a project budgeting and financial planning output from the planner document. "
         "Return exactly one valid JSON object and nothing else. Never use markdown or code fences. "
         "Ground cost and effort estimates in the source WBS, schedule, resource allocation, effort estimation, and risks. "
-        "If actual rates or currency are missing, set numeric costs to 0 where needed and explain the rate/currency assumption in basis fields. "
+        "If actual labor rates are missing, use the standard budget rate of USD 36/hour. "
+        "Compute labor cost from person_days * 8 * 36 or count * duration_weeks * 40 * 36 when those values are supported by the source. "
+        "Use USD as the default currency when the source does not specify currency. "
+        "Do not set costs to 0 only because rates are missing; explain the default rate assumption in basis fields. "
         "Do not invent vendor prices. Make uncertainty explicit. "
         "The response must match this JSON shape and include every top-level key:\n"
         f"{json.dumps(BUDGET_JSON_CONTRACT, ensure_ascii=False, indent=2)}\n\n"
@@ -88,9 +91,10 @@ def budget_repair_prompt(document_text: str, invalid_response: Any, error: str) 
         f"Validation error: {error}\n\n"
         "Return a corrected response as exactly one valid JSON object and nothing else. "
         "Include project_name, summary, currency, cost_summary, workstream_estimates, resource_costs, timeline_budget, budget_risks, recommendations, and traceability. "
+        "If actual labor rates are missing, use USD 36/hour and explain that assumption in basis fields. "
+        "Do not set costs to 0 only because rates are missing. "
         "Do not use markdown or prose outside JSON.\n\n"
         f"Required JSON shape:\n{json.dumps(BUDGET_JSON_CONTRACT, ensure_ascii=False, indent=2)}\n\n"
         f"Previous invalid response:\n{to_json_text(invalid_response, 3500)}\n\n"
         f"Planner document content:\n{context}"
     )
-

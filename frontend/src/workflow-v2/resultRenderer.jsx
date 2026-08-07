@@ -7,6 +7,7 @@ const LONG_TEXT_LIMIT = 520
 const RESPONSE_META_KEYS = ['demand_id', 'filename', 'ingestion_metadata']
 const EXECUTIVE_HIDDEN_KEYS = ['file_ids', 'source_files', 'files', 'uploaded_files', 'input_files']
 const BUDGET_HIDDEN_KEYS = ['file_id', 'source_text_chars', 'source_text', 'extracted_text']
+const USER_STORY_HIDDEN_KEYS = ['file_id', 'source_text_chars', 'source_text', 'extracted_text']
 const SECTION_LABELS = {
   non_functional_requirements: 'Non-Functional Requirements',
   raid: 'Risks, Assumptions, Issues, Decisions',
@@ -17,9 +18,10 @@ const SECTION_LABELS = {
 
 export function StructuredResult({ data, agentId }) {
   const { main, meta } = normalizeResult(data, agentId)
+  const agentHiddenKeys = hiddenKeysForAgent(agentId)
   const sections = renderableEntries(filterAgentSections(main, agentId))
   const titles = agentId === 'brd' ? displayedSectionTiles(sections) : []
-  const metaRows = renderableEntries(omitKeys(meta, ['titles']))
+  const metaRows = renderableEntries(omitKeys(meta, ['titles', ...agentHiddenKeys]))
   const metrics = sectionMetrics(main)
 
   if (!sections.length && !metaRows.length && !titles.length) {
@@ -73,7 +75,15 @@ export function StructuredResult({ data, agentId }) {
 function filterAgentSections(main, agentId) {
   if (agentId === 'executive') return omitKeys(main, EXECUTIVE_HIDDEN_KEYS)
   if (agentId === 'budget') return omitKeys(main, BUDGET_HIDDEN_KEYS)
+  if (agentId === 'stories') return omitKeys(main, USER_STORY_HIDDEN_KEYS)
   return main
+}
+
+function hiddenKeysForAgent(agentId) {
+  if (agentId === 'executive') return EXECUTIVE_HIDDEN_KEYS
+  if (agentId === 'budget') return BUDGET_HIDDEN_KEYS
+  if (agentId === 'stories') return USER_STORY_HIDDEN_KEYS
+  return []
 }
 
 function normalizeResult(data, agentId) {
