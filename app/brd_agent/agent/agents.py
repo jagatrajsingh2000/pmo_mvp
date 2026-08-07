@@ -27,6 +27,21 @@ CHUNK_OVERLAP_CHARS = int(os.environ.get("BRD_CHUNK_OVERLAP_CHARS", "1200"))
 FACT_BUNDLE_MAX_CHARS = int(os.environ.get("BRD_FACT_BUNDLE_MAX_CHARS", "42000"))
 FACT_BATCH_MAX_CHARS = int(os.environ.get("BRD_FACT_BATCH_MAX_CHARS", "26000"))
 
+COUNT_CATEGORIES = (
+    "functional_requirements",
+    "non_functional_requirements",
+    "risks",
+    "assumptions",
+    "issues",
+    "dependencies",
+    "decisions",
+    "integrations",
+    "stakeholders",
+    "milestones",
+    "resource_items",
+    "budget_items",
+)
+
 
 def _validate_brd(payload: Dict[str, Any]) -> None:
     resolved = payload.get("resolved")
@@ -50,7 +65,7 @@ def _validate_brd(payload: Dict[str, Any]) -> None:
         "budget_commercial",
         "governance_signoff",
         "missing_information",
-        "brd_quality_verification",
+        "source_coverage_review",
     )
     missing = [section for section in required_sections if section not in resolved]
     if missing:
@@ -65,18 +80,36 @@ def _validate_brd(payload: Dict[str, Any]) -> None:
             "BRD Agent dependencies missing required categories: "
             + ", ".join(missing_dependency_categories)
         )
-    verification = resolved.get("brd_quality_verification")
+    verification = resolved.get("source_coverage_review")
     if not isinstance(verification, dict):
-        raise RuntimeError("BRD Agent brd_quality_verification must be an object.")
+        raise RuntimeError("BRD Agent source_coverage_review must be an object.")
     for key in (
-        "no_major_section_empty",
-        "requirements_preserved",
-        "unsupported_facts_removed",
-        "source_gaps_represented",
-        "professional_ba_narrative",
+        "extracted_counts_considered",
+        "output_counts",
+        "coverage_gaps",
+        "unsupported_values_removed",
+        "verification_notes",
     ):
         if key not in verification:
-            raise RuntimeError(f"BRD Agent brd_quality_verification missing {key}.")
+            raise RuntimeError(f"BRD Agent source_coverage_review missing {key}.")
+
+
+def _validate_brd_with_expected_counts(payload: Dict[str, Any], expected_counts: Dict[str, int]) -> None:
+    _validate_brd(payload)
+    output_counts = _count_output_items(payload.get("resolved", {}))
+    missing_counts = []
+    for category, expected_count in expected_counts.items():
+        if expected_count <= 0:
+            continue
+        output_count = output_counts.get(category, 0)
+        if output_count < expected_count:
+            missing_counts.append(f"{category}: expected at least {expected_count}, got {output_count}")
+    if missing_counts:
+        raise RuntimeError(
+            "BRD Agent final output dropped extracted source items. "
+            + "; ".join(missing_counts)
+            + ". Add every extracted item instead of summarizing representative examples."
+        )
 
 
 def _validate_chunk_facts(payload: Dict[str, Any]) -> None:
@@ -97,6 +130,77 @@ def _validate_merged_facts(payload: Dict[str, Any]) -> None:
         raise RuntimeError("BRD merged facts uncertainties must be an array.")
 
 
+def _count_extracted_facts(fact_sets: list[Dict[str, Any]]) -> Dict[str, int]:
+    unique_items = {category: set() for category in COUNT_CATEGORIES}
+    for fact_set in fact_sets:
+        facts = fact_set.get("facts") or fact_set.get("merged_facts") or {}
+        _add_unique(unique_items["functional_requirements"], facts.get("functional_requirements"), ("req_id", "requirement"))
+        _add_unique(unique_items["non_functional_requirements"], facts.get("non_functional_requirements"), ("nfr_id", "requirement"))
+        _add_unique(unique_items["risks"], facts.get("risks"), ("id", "risk"))
+        _add_unique(unique_items["assumptions"], facts.get("assumptions"), ("assumption",))
+        _add_unique(unique_items["issues"], facts.get("issues"), ("issue",))
+        _add_unique(unique_items["dependencies"], facts.get("dependencies"), ("category", "type", "dependency"))
+        _add_unique(unique_items["decisions"], facts.get("decisions"), ("decision",))
+        _add_unique(unique_items["integrations"], facts.get("integrations"), ("integration", "source", "target"))
+        _add_unique(unique_items["stakeholders"], facts.get("stakeholders"), ("role", "name", "function"))
+        _add_unique(unique_items["milestones"], facts.get("roadmap_milestones"), ("milestone", "target_date"))
+        _add_unique(unique_items["milestones"], facts.get("governance_signoff"), ("gate", "item", "date"))
+        _add_unique(unique_items["resource_items"], facts.get("resource_model"), ("role_or_team", "responsibility"))
+        _add_unique(unique_items["budget_items"], facts.get("budget_commercial"), ("item",))
+    return {category: len(values) for category, values in unique_items.items()}
+
+
+def _count_output_items(resolved: Dict[str, Any]) -> Dict[str, int]:
+    raid = resolved.get("raid") if isinstance(resolved.get("raid"), dict) else {}
+    dependencies = resolved.get("dependencies") if isinstance(resolved.get("dependencies"), dict) else {}
+    governance = resolved.get("governance_signoff") if isinstance(resolved.get("governance_signoff"), dict) else {}
+    budget = resolved.get("budget_commercial") if isinstance(resolved.get("budget_commercial"), dict) else {}
+    return {
+        "functional_requirements": len(_as_list(resolved.get("functional_requirements"))),
+        "non_functional_requirements": len(_as_list(resolved.get("non_functional_requirements"))),
+        "risks": len(_as_list(raid.get("risks"))),
+        "assumptions": len(_as_list(raid.get("assumptions"))),
+        "issues": len(_as_list(raid.get("issues"))),
+        "dependencies": sum(len(_as_list(dependencies.get(category))) for category in ("technical", "business", "vendor", "compliance", "testing", "data")),
+        "decisions": len(_as_list(raid.get("decisions"))),
+        "integrations": len(_as_list(resolved.get("integrations"))),
+        "stakeholders": len(_as_list(resolved.get("stakeholders"))),
+        "milestones": len(_as_list(resolved.get("roadmap_milestones"))) + len(_as_list(governance.get("gate_plan"))),
+        "resource_items": len(_as_list(resolved.get("resource_model"))),
+        "budget_items": (
+            len(_as_list(budget.get("budget_information")))
+            + len(_as_list(budget.get("commercial_assumptions")))
+            + len(_as_list(budget.get("source_evidence")))
+        ),
+    }
+
+
+def _add_unique(target: set[str], rows: Any, identity_fields: tuple[str, ...]) -> None:
+    for row in _as_list(rows):
+        fingerprint = _fingerprint(row, identity_fields)
+        if fingerprint:
+            target.add(fingerprint)
+
+
+def _as_list(value: Any) -> list[Any]:
+    return value if isinstance(value, list) else []
+
+
+def _fingerprint(value: Any, fields: tuple[str, ...]) -> str:
+    if isinstance(value, dict):
+        parts = []
+        for field in fields:
+            field_value = value.get(field)
+            if field_value is not None and str(field_value).strip():
+                parts.append(str(field_value).strip().lower())
+        if parts:
+            return " | ".join(parts)
+        return " | ".join(str(value.get(key, "")).strip().lower() for key in sorted(value.keys()) if value.get(key))
+    if value is None:
+        return ""
+    return str(value).strip().lower()
+
+
 def _generate_brd_direct(document_text: str, filename: str) -> Dict[str, Any]:
     result = generate_required_json(
         agent_name="brd_agent",
@@ -106,6 +210,7 @@ def _generate_brd_direct(document_text: str, filename: str) -> Dict[str, Any]:
         validator=_validate_brd,
         max_tokens=14000,
     )
+    _attach_source_coverage_counts(result)
     return result
 
 
@@ -205,6 +310,7 @@ def _generate_brd_from_chunks(document_text: str, filename: str) -> Dict[str, An
         CHUNK_OVERLAP_CHARS,
     )
     chunk_facts = [_extract_chunk_facts(chunk) for chunk in chunks]
+    expected_counts = _count_extracted_facts(chunk_facts)
     compacted_facts = _compact_facts_if_needed(chunk_facts)
     fact_bundle_text = to_json_text(compacted_facts)
     logger.info(
@@ -218,9 +324,10 @@ def _generate_brd_from_chunks(document_text: str, filename: str) -> Dict[str, An
         prompt=brd_from_facts_prompt(fact_bundle_text, filename),
         required_keys=BRD_REQUIRED_KEYS,
         repair_prompt=lambda invalid, error: brd_from_facts_repair_prompt(fact_bundle_text, invalid, error, filename),
-        validator=_validate_brd,
+        validator=lambda payload: _validate_brd_with_expected_counts(payload, expected_counts),
         max_tokens=14000,
     )
+    _attach_source_coverage_counts(result, expected_counts)
     result["ingestion_metadata"] = {
         "mode": "chunked",
         "source_text_chars": len(document_text or ""),
@@ -229,8 +336,28 @@ def _generate_brd_from_chunks(document_text: str, filename: str) -> Dict[str, An
         "chunk_overlap_chars": CHUNK_OVERLAP_CHARS,
         "fact_sets_after_merge": len(compacted_facts),
         "fact_bundle_chars": len(fact_bundle_text),
+        "unique_extracted_counts": expected_counts,
+        "final_output_counts": _count_output_items(result.get("resolved", {})),
     }
     return result
+
+
+def _attach_source_coverage_counts(payload: Dict[str, Any], expected_counts: Dict[str, int] | None = None) -> None:
+    resolved = payload.get("resolved")
+    if not isinstance(resolved, dict):
+        return
+    review = resolved.setdefault("source_coverage_review", {})
+    if not isinstance(review, dict):
+        review = {}
+        resolved["source_coverage_review"] = review
+    if expected_counts is not None:
+        review["extracted_counts_considered"] = expected_counts
+    else:
+        review.setdefault("extracted_counts_considered", {})
+    review["output_counts"] = _count_output_items(resolved)
+    review.setdefault("coverage_gaps", [])
+    review.setdefault("unsupported_values_removed", [])
+    review.setdefault("verification_notes", [])
 
 
 def generate_brd_preview(document_text: str, filename: str = "workflow-brd.docx") -> Dict[str, Any]:

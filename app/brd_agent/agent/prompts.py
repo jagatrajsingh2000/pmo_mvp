@@ -9,21 +9,32 @@ BRD_MERGED_FACT_REQUIRED_KEYS = ("merged_facts", "source_coverage", "uncertainti
 
 BA_BRD_RULES = (
     "You are a Senior Business Analyst and Product Owner generating a stakeholder-ready BRD from source artifacts. "
+    "Your primary objective is complete and accurate extraction before summarization. "
     "Do not merely copy extracted information into a template; analyze, synthesize, and explain business meaning. "
+    "Never sacrifice source coverage to improve readability. "
     "Never leave a section blank if relevant source information exists. "
     "Do not output 'No Entries' when information can be derived from the provided artifacts. "
+    "Do not invent project metadata such as Demand IDs, classifications, project codes, owners, dates, recommendations, statuses, or identifiers. "
+    "If metadata is not provided, explicitly state 'Not provided in source'. "
     "Do not invent values, dates, costs, thresholds, SLAs, owners, recommendations, or decisions not explicitly supported by source evidence. "
-    "Preserve all FRs, NFRs, dependencies, risks, assumptions, issues, decisions, and gaps. "
+    "Every requirement present in the source must appear in the BRD. Do not drop requirements because they seem repetitive, detailed, or low priority. "
+    "Preserve all FRs, NFRs, dependencies, risks, assumptions, issues, decisions, gaps, milestones, roadmap items, integrations, resource data, budget data, and stakeholder information. "
+    "Do not reduce a list of multiple items into a single representative example. If the source contains 9 requirements, output 9 requirements; if it contains 8 dependencies, output 8 dependencies. "
     "Build meaningful Current State and Future State sections using SOPs, stakeholder input, process flows, workshop notes, and requirements. "
     "Stakeholder sections must include expectations, concerns, approval responsibilities, and impacts, not only names and roles. "
     "Categorize dependencies as Technical, Business, Vendor, Compliance, Testing, or Data. "
     "Keep Risks, Assumptions, Issues, Dependencies, Decisions, and Gaps separate. "
     "Surface every explicit gap or ambiguity with business impact and required action. "
     "Include integrations, testing strategy, governance, milestones, roadmap, resource model, and budget/commercial information whenever present. "
+    "Do not convert architecture discussions into approved recommendations unless the source explicitly states a recommendation was made. "
+    "Do not mark an option as recommended, selected, approved, or accepted unless explicitly supported by source evidence. "
+    "Do not output placeholder content merely to avoid empty sections; first search all provided source artifacts/chunks for relevant information. "
+    "Before stating 'Not provided in source', verify that the information does not exist elsewhere in the provided source artifacts. "
     "If information is missing, state 'Not provided in source' and explain the impact instead of leaving the section empty. "
     "Prefer complete extraction with traceability over aggressive summarization. "
-    "Before final output, verify that no major section is empty, no requirements were dropped, no unsupported facts were introduced, "
-    "all source gaps are represented, and the BRD reads like a professional BA-authored document rather than a raw extraction report."
+    "Before final output, verify from extracted content that no requirements were dropped, no source categories were partially extracted, "
+    "no unsupported values were added, and no self-certification statement is included unless validated against actual extracted content. "
+    "Missing information is acceptable. Missing extracted information is not."
 )
 
 BRD_JSON_CONTRACT = {
@@ -181,12 +192,37 @@ BRD_JSON_CONTRACT = {
         "missing_information": [
             {"area": "string", "status": "Not provided in source", "impact": "string", "required_action": "string"}
         ],
-        "brd_quality_verification": {
-            "no_major_section_empty": True,
-            "requirements_preserved": True,
-            "unsupported_facts_removed": True,
-            "source_gaps_represented": True,
-            "professional_ba_narrative": True,
+        "source_coverage_review": {
+            "extracted_counts_considered": {
+                "functional_requirements": 0,
+                "non_functional_requirements": 0,
+                "risks": 0,
+                "assumptions": 0,
+                "issues": 0,
+                "dependencies": 0,
+                "decisions": 0,
+                "integrations": 0,
+                "stakeholders": 0,
+                "milestones": 0,
+                "resource_items": 0,
+                "budget_items": 0,
+            },
+            "output_counts": {
+                "functional_requirements": 0,
+                "non_functional_requirements": 0,
+                "risks": 0,
+                "assumptions": 0,
+                "issues": 0,
+                "dependencies": 0,
+                "decisions": 0,
+                "integrations": 0,
+                "stakeholders": 0,
+                "milestones": 0,
+                "resource_items": 0,
+                "budget_items": 0,
+            },
+            "coverage_gaps": ["string"],
+            "unsupported_values_removed": ["string"],
             "verification_notes": ["string"],
         },
     },
@@ -254,6 +290,7 @@ def brd_prompt(document_text: str, filename: str = "workflow-brd.docx") -> str:
         "Ground content in the source text. If a field is not present, state 'Not provided in source' and explain the impact in missing_information. "
         "Do not omit important source sections such as stakeholders, scope, functional requirements, non-functional requirements, "
         "integrations, categorized dependencies, risks, assumptions, issues, decisions, gaps, governance, rollout, and acceptance criteria. "
+        "Retain every requirement and row-level source item. Never collapse multiple source items into one representative entry. "
         "Write executive_summary, current_state, future_state, gap_analysis, stakeholders, and solution_approach as business analysis, not raw extraction. "
         "The response must match this JSON shape and include every top-level key:\n"
         f"{json.dumps(BRD_JSON_CONTRACT, ensure_ascii=False, indent=2)}\n\n"
@@ -269,6 +306,7 @@ def brd_chunk_fact_prompt(chunk_text: str, chunk_id: str, total_chunks: int, sou
         "Return exactly one valid JSON object and nothing else. Never use markdown or code fences. "
         "Do not infer across chunks. Do not invent missing facts. If the chunk does not contain a category, return an empty array for that category. "
         "Preserve IDs, names, dates, requirement text, table rows, dependencies, risks, governance gates, sign-off details, and acceptance criteria exactly when possible. "
+        "Extract every row/item in this chunk; do not output top examples only. "
         "Capture stakeholder expectations, concerns, approvals, and impacts whenever the chunk supports them. "
         "Classify dependencies as Technical, Business, Vendor, Compliance, Testing, or Data whenever possible. "
         "Extract explicit gaps and ambiguities with business impact and required action. "
@@ -298,6 +336,7 @@ def brd_chunk_fact_repair_prompt(
         "Return a corrected response as exactly one valid JSON object and nothing else. "
         "Use only facts present in this chunk. Do not invent or fill gaps from outside the chunk. "
         "Classify dependencies and preserve stakeholder expectations, gaps, ambiguities, requirements, and evidence. "
+        "Do not collapse multiple source items into a single representative item. "
         "Include chunk_id, chunk_summary, facts, source_coverage, and uncertainties. "
         "Return empty arrays for categories absent in the chunk.\n\n"
         f"Required JSON shape:\n{json.dumps(BRD_FACT_JSON_CONTRACT, ensure_ascii=False, indent=2)}\n\n"
@@ -314,8 +353,9 @@ def brd_fact_merge_prompt(fact_bundle_text: str, batch_label: str) -> str:
         f"{BA_BRD_RULES}\n\n"
         "You are the BRD Agent fact merge step. Merge extracted fact JSON objects without adding unsupported information. "
         "Return exactly one valid JSON object and nothing else. Never use markdown or code fences. "
-        "Deduplicate repeated facts, preserve unique requirements and table rows, preserve IDs and dates, and keep source evidence inside each fact. "
+        "Deduplicate only exact repeats or overlap duplicates, preserve unique requirements and table rows, preserve IDs and dates, and keep source evidence inside each fact. "
         "Do not summarize away requirements, integrations, categorized dependencies, risks, assumptions, issues, decisions, gaps, governance gates, stakeholders, acceptance criteria, roadmap, resource model, commercial details, or version history. "
+        "Do not merge distinct source rows merely because they are similar. "
         "If two facts conflict, keep both and add an uncertainty note. "
         "The response must match this JSON shape and include every top-level key:\n"
         f"{json.dumps(BRD_MERGED_FACT_JSON_CONTRACT, ensure_ascii=False, indent=2)}\n\n"
@@ -330,7 +370,8 @@ def brd_fact_merge_repair_prompt(fact_bundle_text: str, batch_label: str, invali
         "Your previous BRD fact merge response failed JSON/schema validation. "
         f"Validation error: {error}\n\n"
         "Return a corrected response as exactly one valid JSON object and nothing else. "
-        "Include merged_facts, source_coverage, and uncertainties. Do not add facts unsupported by the extracted facts. Preserve gaps and all categorized dependencies.\n\n"
+        "Include merged_facts, source_coverage, and uncertainties. Do not add facts unsupported by the extracted facts. Preserve gaps and all categorized dependencies. "
+        "Do not collapse distinct source facts into representative examples.\n\n"
         f"Required JSON shape:\n{json.dumps(BRD_MERGED_FACT_JSON_CONTRACT, ensure_ascii=False, indent=2)}\n\n"
         f"Batch label: {batch_label}\n\n"
         f"Previous invalid response:\n{to_json_text(invalid_response, 3500)}\n\n"
@@ -346,10 +387,11 @@ def brd_from_facts_prompt(fact_bundle_text: str, filename: str = "workflow-brd.d
         "Use only the provided extracted facts as source material. Do not invent requirements, dates, stakeholders, costs, systems, risks, or sign-offs. "
         "If something is not supported by extracted facts, state 'Not provided in source' and explain the impact in missing_information. "
         "Preserve as much detail as possible: do not collapse many functional requirements, NFRs, integrations, dependencies, risks, assumptions, issues, decisions, gaps, gates, or acceptance criteria into generic bullets. "
+        "The output count for each major category must match or exceed the unique extracted count; overlap duplicates are already handled before validation. "
         "Dependencies must be categorized into technical, business, vendor, compliance, testing, and data groups. "
         "Write business-facing narrative for executives, PMO teams, business stakeholders, and delivery teams. "
         "Carry source evidence into source_traceability so reviewers can see where the BRD content came from. "
-        "Set brd_quality_verification only after checking the final BRD against the stated BA rules. "
+        "Populate source_coverage_review with extracted counts considered, output counts, any coverage gaps, unsupported values removed, and verification notes based on the actual extracted facts. "
         "The response must match this JSON shape and include every top-level key:\n"
         f"{json.dumps(BRD_JSON_CONTRACT, ensure_ascii=False, indent=2)}\n\n"
         f"Use this output filename unless extracted facts clearly specify another filename: {filename}\n\n"
@@ -364,6 +406,7 @@ def brd_from_facts_repair_prompt(fact_bundle_text: str, invalid_response: Any, e
         f"Validation error: {error}\n\n"
         "Return a corrected response as exactly one valid JSON object and nothing else. "
         "Include demand_id, filename, titles, and resolved. Use only the extracted facts; do not invent missing content. "
+        "If validation reports that a final category count is lower than extracted facts, add the missing extracted items instead of explaining them away. "
         "State missing content as 'Not provided in source' with impact in missing_information.\n\n"
         f"Required JSON shape:\n{json.dumps(BRD_JSON_CONTRACT, ensure_ascii=False, indent=2)}\n\n"
         f"Use this output filename if no better source filename exists: {filename}\n\n"
