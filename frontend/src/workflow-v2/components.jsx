@@ -101,7 +101,7 @@ export function ResultModal({ agent, output, onClose }) {
 
         <section className="v2-modal-section" ref={reportRef}>
           <h3>Agent Output</h3>
-          <StructuredResult data={output.data} />
+          <StructuredResult data={output.data} agentId={agent.id} />
         </section>
       </section>
     </div>

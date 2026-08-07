@@ -3,19 +3,30 @@ import { labelize } from './utils'
 
 const HIDDEN_FIELD_PATTERN = /(base64|binary|blob|bytes|content_base64|docx_base64|document_base64|file_base64)/i
 const LONG_TEXT_LIMIT = 520
+const RESPONSE_META_KEYS = ['demand_id', 'filename', 'ingestion_metadata']
+const SECTION_LABELS = {
+  non_functional_requirements: 'Non-Functional Requirements',
+  raid: 'Risks, Assumptions, Issues, Decisions',
+  acceptance_criteria_testing: 'Acceptance Criteria & Testing',
+  rollout_change_management: 'Rollout & Change Management',
+  governance_signoff: 'Governance & Sign-off',
+}
 
-export function StructuredResult({ data }) {
+export function StructuredResult({ data, agentId }) {
   const { main, meta } = normalizeResult(data)
   const sections = renderableEntries(main)
-  const metaRows = renderableEntries(meta)
+  const titles = agentId === 'brd' ? displayedSectionTiles(sections) : []
+  const metaRows = renderableEntries(omitKeys(meta, ['titles']))
   const metrics = sectionMetrics(main)
 
-  if (!sections.length && !metaRows.length) {
+  if (!sections.length && !metaRows.length && !titles.length) {
     return <p className="v2-muted">No displayable agent output returned.</p>
   }
 
   return (
     <div className="v2-structured-result">
+      {titles.length > 0 && <TitleOutline titles={titles} />}
+
       {metaRows.length > 0 && (
         <section className="v2-output-section compact">
           <header>
@@ -62,7 +73,7 @@ function normalizeResult(data) {
   if (isPlainObject(data.resolved)) {
     return {
       main: data.resolved,
-      meta: omitKeys(data, ['resolved', 'source']),
+      meta: omitKeys(data, ['resolved', 'source', ...RESPONSE_META_KEYS]),
     }
   }
 
@@ -74,19 +85,41 @@ function normalizeResult(data) {
 
   if (candidate) {
     return {
-      main: candidate,
-      meta: omitKeys(data, ['report', 'output', 'result', 'data', 'source']),
+      main: omitKeys(candidate, RESPONSE_META_KEYS),
+      meta: omitKeys(data, ['report', 'output', 'result', 'data', 'source', ...RESPONSE_META_KEYS]),
     }
   }
 
-  return { main: data, meta: {} }
+  return { main: omitKeys(data, RESPONSE_META_KEYS), meta: {} }
+}
+
+function TitleOutline({ titles }) {
+  return (
+    <section className="v2-title-outline">
+      <header>
+        <div>
+          <h3>Displayed Sections</h3>
+          <p>Only sections currently rendered in this report.</p>
+        </div>
+        <span>{titles.length} sections</span>
+      </header>
+      <div className="v2-title-grid">
+        {titles.map((item) => (
+          <article className="v2-title-card" key={`${item.number}-${item.title}`}>
+            <span>{item.number}</span>
+            <strong>{item.title}</strong>
+          </article>
+        ))}
+      </div>
+    </section>
+  )
 }
 
 function SectionBlock({ name, value, level }) {
   return (
     <section className={`v2-output-section level-${Math.min(level, 2)}`}>
       <header>
-        <h3>{labelize(name)}</h3>
+        <h3>{sectionLabel(name)}</h3>
         <span>{describeValue(value)}</span>
       </header>
       <ValueBlock value={value} level={level} />
@@ -187,7 +220,7 @@ function PrimitiveList({ items }) {
 function sectionMetrics(value) {
   if (!isPlainObject(value)) return []
   const metrics = renderableEntries(value)
-    .map(([key, entryValue]) => [labelize(key), countEntries(entryValue)])
+    .map(([key, entryValue]) => [sectionLabel(key), countEntries(entryValue)])
     .filter(([, count]) => count > 0)
     .sort((left, right) => right[1] - left[1])
     .slice(0, 8)
@@ -242,6 +275,17 @@ function describeValue(value) {
 function renderableEntries(value) {
   if (!isPlainObject(value)) return []
   return Object.entries(value).filter(([key, entryValue]) => !HIDDEN_FIELD_PATTERN.test(key) && !isEmptyValue(entryValue))
+}
+
+function displayedSectionTiles(sections) {
+  return sections.map(([key], index) => ({
+    number: index + 1,
+    title: sectionLabel(key),
+  }))
+}
+
+function sectionLabel(key) {
+  return SECTION_LABELS[key] || labelize(key)
 }
 
 function omitKeys(value, keys) {
