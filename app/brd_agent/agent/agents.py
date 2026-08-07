@@ -37,16 +37,46 @@ def _validate_brd(payload: Dict[str, Any]) -> None:
         "executive_summary",
         "scope",
         "stakeholders",
+        "current_state",
+        "future_state",
+        "gap_analysis",
         "functional_requirements",
         "non_functional_requirements",
         "integrations",
         "dependencies",
         "raid",
+        "roadmap_milestones",
+        "resource_model",
+        "budget_commercial",
         "governance_signoff",
+        "missing_information",
+        "brd_quality_verification",
     )
     missing = [section for section in required_sections if section not in resolved]
     if missing:
         raise RuntimeError("BRD Agent resolved object missing sections: " + ", ".join(missing))
+    dependencies = resolved.get("dependencies")
+    if not isinstance(dependencies, dict):
+        raise RuntimeError("BRD Agent dependencies must be categorized as an object.")
+    dependency_categories = ("technical", "business", "vendor", "compliance", "testing", "data")
+    missing_dependency_categories = [category for category in dependency_categories if category not in dependencies]
+    if missing_dependency_categories:
+        raise RuntimeError(
+            "BRD Agent dependencies missing required categories: "
+            + ", ".join(missing_dependency_categories)
+        )
+    verification = resolved.get("brd_quality_verification")
+    if not isinstance(verification, dict):
+        raise RuntimeError("BRD Agent brd_quality_verification must be an object.")
+    for key in (
+        "no_major_section_empty",
+        "requirements_preserved",
+        "unsupported_facts_removed",
+        "source_gaps_represented",
+        "professional_ba_narrative",
+    ):
+        if key not in verification:
+            raise RuntimeError(f"BRD Agent brd_quality_verification missing {key}.")
 
 
 def _validate_chunk_facts(payload: Dict[str, Any]) -> None:

@@ -7,6 +7,25 @@ BRD_REQUIRED_KEYS = ("demand_id", "filename", "titles", "resolved")
 BRD_FACT_REQUIRED_KEYS = ("chunk_id", "chunk_summary", "facts", "source_coverage", "uncertainties")
 BRD_MERGED_FACT_REQUIRED_KEYS = ("merged_facts", "source_coverage", "uncertainties")
 
+BA_BRD_RULES = (
+    "You are a Senior Business Analyst and Product Owner generating a stakeholder-ready BRD from source artifacts. "
+    "Do not merely copy extracted information into a template; analyze, synthesize, and explain business meaning. "
+    "Never leave a section blank if relevant source information exists. "
+    "Do not output 'No Entries' when information can be derived from the provided artifacts. "
+    "Do not invent values, dates, costs, thresholds, SLAs, owners, recommendations, or decisions not explicitly supported by source evidence. "
+    "Preserve all FRs, NFRs, dependencies, risks, assumptions, issues, decisions, and gaps. "
+    "Build meaningful Current State and Future State sections using SOPs, stakeholder input, process flows, workshop notes, and requirements. "
+    "Stakeholder sections must include expectations, concerns, approval responsibilities, and impacts, not only names and roles. "
+    "Categorize dependencies as Technical, Business, Vendor, Compliance, Testing, or Data. "
+    "Keep Risks, Assumptions, Issues, Dependencies, Decisions, and Gaps separate. "
+    "Surface every explicit gap or ambiguity with business impact and required action. "
+    "Include integrations, testing strategy, governance, milestones, roadmap, resource model, and budget/commercial information whenever present. "
+    "If information is missing, state 'Not provided in source' and explain the impact instead of leaving the section empty. "
+    "Prefer complete extraction with traceability over aggressive summarization. "
+    "Before final output, verify that no major section is empty, no requirements were dropped, no unsupported facts were introduced, "
+    "all source gaps are represented, and the BRD reads like a professional BA-authored document rather than a raw extraction report."
+)
+
 BRD_JSON_CONTRACT = {
     "demand_id": "string",
     "filename": "string",
@@ -56,12 +75,44 @@ BRD_JSON_CONTRACT = {
             "assumptions": ["string"],
         },
         "stakeholders": [
-            {"role": "string", "function": "string", "raci": "A | R | C | I | null", "engagement": "string", "name": "string or null"}
+            {
+                "role": "string",
+                "function": "string",
+                "raci": "A | R | C | I | null",
+                "engagement": "string",
+                "name": "string or null",
+                "expectations": ["string"],
+                "concerns": ["string"],
+                "approval_responsibilities": ["string"],
+                "business_impact": "string",
+                "source_evidence": "short quote or paraphrase",
+            }
         ],
-        "current_state": {"summary": "string", "impacted_applications": ["string"], "pain_points": ["string"]},
-        "future_state": {"capability_uplift": ["string"], "target_capabilities": ["string"]},
+        "current_state": {
+            "business_narrative": "string",
+            "process_context": ["string"],
+            "impacted_applications": ["string"],
+            "pain_points": ["string"],
+            "business_impacts": ["string"],
+            "source_evidence": ["short quote or paraphrase"],
+        },
+        "future_state": {
+            "business_narrative": "string",
+            "capability_uplift": ["string"],
+            "target_capabilities": ["string"],
+            "operational_benefits": ["string"],
+            "source_evidence": ["short quote or paraphrase"],
+        },
         "gap_analysis": [
-            {"capability": "string", "current": "string", "target": "string", "gap": "string", "action": "string"}
+            {
+                "capability": "string",
+                "current": "string",
+                "target": "string",
+                "gap": "string",
+                "business_impact": "string",
+                "required_action": "string",
+                "source_evidence": "short quote or paraphrase",
+            }
         ],
         "functional_requirements": [
             {"req_id": "FR-001", "requirement": "string", "priority": "Must Have | Should Have | Could Have", "acceptance_criteria": "string"}
@@ -72,7 +123,14 @@ BRD_JSON_CONTRACT = {
         "integrations": [
             {"integration": "string", "source": "string", "target": "string", "type": "string", "frequency": "string", "notes": "string"}
         ],
-        "dependencies": {"upstream": ["string"], "downstream": ["string"], "external": ["string"]},
+        "dependencies": {
+            "technical": [{"dependency": "string", "impact": "string", "required_action": "string", "source_evidence": "short quote or paraphrase"}],
+            "business": [{"dependency": "string", "impact": "string", "required_action": "string", "source_evidence": "short quote or paraphrase"}],
+            "vendor": [{"dependency": "string", "impact": "string", "required_action": "string", "source_evidence": "short quote or paraphrase"}],
+            "compliance": [{"dependency": "string", "impact": "string", "required_action": "string", "source_evidence": "short quote or paraphrase"}],
+            "testing": [{"dependency": "string", "impact": "string", "required_action": "string", "source_evidence": "short quote or paraphrase"}],
+            "data": [{"dependency": "string", "impact": "string", "required_action": "string", "source_evidence": "short quote or paraphrase"}],
+        },
         "raid": {
             "risks": [{"id": "R-01", "risk": "string", "likelihood": "low | medium | high", "impact": "low | medium | high", "mitigation": "string", "owner": "string"}],
             "assumptions": ["string"],
@@ -93,6 +151,18 @@ BRD_JSON_CONTRACT = {
             "test_strategy_summary": ["string"],
             "uat_exit_criteria": ["string"],
         },
+        "roadmap_milestones": [
+            {"milestone": "string", "target_date": "YYYY-MM-DD or null", "business_value": "string", "source_evidence": "short quote or paraphrase"}
+        ],
+        "resource_model": [
+            {"role_or_team": "string", "responsibility": "string", "capacity_or_count": "string or Not provided in source", "impact_if_missing": "string", "source_evidence": "short quote or paraphrase"}
+        ],
+        "budget_commercial": {
+            "budget_information": ["string"],
+            "commercial_assumptions": ["string"],
+            "missing_information_impact": ["string"],
+            "source_evidence": ["short quote or paraphrase"],
+        },
         "rollout_change_management": {
             "rollout_strategy": "string",
             "communication_plan": "string",
@@ -108,6 +178,17 @@ BRD_JSON_CONTRACT = {
         "source_traceability": [
             {"section": "string", "source_evidence": "short quote or paraphrase", "confidence": "low | medium | high"}
         ],
+        "missing_information": [
+            {"area": "string", "status": "Not provided in source", "impact": "string", "required_action": "string"}
+        ],
+        "brd_quality_verification": {
+            "no_major_section_empty": True,
+            "requirements_preserved": True,
+            "unsupported_facts_removed": True,
+            "source_gaps_represented": True,
+            "professional_ba_narrative": True,
+            "verification_notes": ["string"],
+        },
     },
 }
 
@@ -118,14 +199,14 @@ BRD_FACT_JSON_CONTRACT = {
         "project_details": [{"field": "string", "value": "string", "evidence": "short quote/paraphrase"}],
         "business_rationale": [{"fact": "string", "evidence": "short quote/paraphrase"}],
         "scope": [{"type": "in_scope | out_of_scope | assumption", "item": "string", "evidence": "short quote/paraphrase"}],
-        "stakeholders": [{"role": "string", "function": "string or null", "raci": "string or null", "engagement": "string or null", "name": "string or null", "evidence": "short quote/paraphrase"}],
-        "current_state": [{"fact": "string", "evidence": "short quote/paraphrase"}],
-        "future_state": [{"fact": "string", "evidence": "short quote/paraphrase"}],
-        "gap_analysis": [{"capability": "string", "current": "string", "target": "string", "gap": "string", "action": "string", "evidence": "short quote/paraphrase"}],
+        "stakeholders": [{"role": "string", "function": "string or null", "raci": "string or null", "engagement": "string or null", "name": "string or null", "expectations": ["string"], "concerns": ["string"], "approval_responsibilities": ["string"], "impact": "string", "evidence": "short quote/paraphrase"}],
+        "current_state": [{"fact": "string", "business_impact": "string", "evidence": "short quote/paraphrase"}],
+        "future_state": [{"fact": "string", "business_value": "string", "evidence": "short quote/paraphrase"}],
+        "gap_analysis": [{"capability": "string", "current": "string", "target": "string", "gap": "string", "business_impact": "string", "required_action": "string", "evidence": "short quote/paraphrase"}],
         "functional_requirements": [{"req_id": "string or null", "requirement": "string", "priority": "string or null", "acceptance_criteria": "string or null", "evidence": "short quote/paraphrase"}],
         "non_functional_requirements": [{"nfr_id": "string or null", "category": "string", "requirement": "string", "target_threshold": "string or null", "evidence": "short quote/paraphrase"}],
         "integrations": [{"integration": "string", "source": "string", "target": "string", "type": "string or null", "frequency": "string or null", "notes": "string", "evidence": "short quote/paraphrase"}],
-        "dependencies": [{"type": "upstream | downstream | external", "dependency": "string", "evidence": "short quote/paraphrase"}],
+        "dependencies": [{"category": "Technical | Business | Vendor | Compliance | Testing | Data", "dependency": "string", "impact": "string", "required_action": "string", "evidence": "short quote/paraphrase"}],
         "risks": [{"id": "string or null", "risk": "string", "likelihood": "string or null", "impact": "string or null", "mitigation": "string or null", "owner": "string or null", "evidence": "short quote/paraphrase"}],
         "assumptions": [{"assumption": "string", "evidence": "short quote/paraphrase"}],
         "issues": [{"issue": "string", "evidence": "short quote/paraphrase"}],
@@ -134,9 +215,13 @@ BRD_FACT_JSON_CONTRACT = {
         "functional_flow": [{"step": "string", "evidence": "short quote/paraphrase"}],
         "module_correlation": [{"module": "string", "depends_on": ["string"], "evidence": "short quote/paraphrase"}],
         "acceptance_testing": [{"item": "string", "evidence": "short quote/paraphrase"}],
+        "roadmap_milestones": [{"milestone": "string", "target_date": "YYYY-MM-DD or null", "business_value": "string", "evidence": "short quote/paraphrase"}],
+        "resource_model": [{"role_or_team": "string", "responsibility": "string", "capacity_or_count": "string or null", "evidence": "short quote/paraphrase"}],
+        "budget_commercial": [{"item": "string", "evidence": "short quote/paraphrase"}],
         "rollout_change": [{"item": "string", "evidence": "short quote/paraphrase"}],
         "governance_signoff": [{"item": "string", "gate": "string or null", "date": "YYYY-MM-DD or null", "evidence": "short quote/paraphrase"}],
         "version_history": [{"version": "string", "date": "YYYY-MM-DD or null", "author": "string or null", "change_summary": "string", "evidence": "short quote/paraphrase"}],
+        "missing_information": [{"area": "string", "status": "Not provided in source", "impact": "string", "required_action": "string", "evidence": "short quote/paraphrase"}],
     },
     "source_coverage": {
         "contains_tables": True,
@@ -162,12 +247,14 @@ BRD_MERGED_FACT_JSON_CONTRACT = {
 def brd_prompt(document_text: str, filename: str = "workflow-brd.docx") -> str:
     context = document_context(document_text, 22000)
     return (
+        f"{BA_BRD_RULES}\n\n"
         "You are the BRD Agent in a PMO document generation workflow. "
         "Create a complete, business-accurate Business Requirements Document from the source document or project brief. "
         "Return exactly one valid JSON object and nothing else. Never use markdown or code fences. "
-        "Ground content in the source text. If a field is not present, use null, an empty array, or a clearly marked assumption. "
+        "Ground content in the source text. If a field is not present, state 'Not provided in source' and explain the impact in missing_information. "
         "Do not omit important source sections such as stakeholders, scope, functional requirements, non-functional requirements, "
-        "integrations, dependencies, risks, governance, rollout, and acceptance criteria. "
+        "integrations, categorized dependencies, risks, assumptions, issues, decisions, gaps, governance, rollout, and acceptance criteria. "
+        "Write executive_summary, current_state, future_state, gap_analysis, stakeholders, and solution_approach as business analysis, not raw extraction. "
         "The response must match this JSON shape and include every top-level key:\n"
         f"{json.dumps(BRD_JSON_CONTRACT, ensure_ascii=False, indent=2)}\n\n"
         f"Use this output filename unless the source clearly specifies another filename: {filename}\n\n"
@@ -177,10 +264,14 @@ def brd_prompt(document_text: str, filename: str = "workflow-brd.docx") -> str:
 
 def brd_chunk_fact_prompt(chunk_text: str, chunk_id: str, total_chunks: int, source_range: str) -> str:
     return (
+        f"{BA_BRD_RULES}\n\n"
         "You are the BRD Agent extraction step. Extract grounded facts from this document chunk only. "
         "Return exactly one valid JSON object and nothing else. Never use markdown or code fences. "
         "Do not infer across chunks. Do not invent missing facts. If the chunk does not contain a category, return an empty array for that category. "
         "Preserve IDs, names, dates, requirement text, table rows, dependencies, risks, governance gates, sign-off details, and acceptance criteria exactly when possible. "
+        "Capture stakeholder expectations, concerns, approvals, and impacts whenever the chunk supports them. "
+        "Classify dependencies as Technical, Business, Vendor, Compliance, Testing, or Data whenever possible. "
+        "Extract explicit gaps and ambiguities with business impact and required action. "
         "Every non-empty fact must include evidence as a short quote or precise paraphrase from this chunk. "
         "Use the source chunk id in chunk_id and record source_char_range. "
         "The response must match this JSON shape and include every top-level key:\n"
@@ -201,10 +292,12 @@ def brd_chunk_fact_repair_prompt(
     error: str,
 ) -> str:
     return (
+        f"{BA_BRD_RULES}\n\n"
         "Your previous BRD chunk extraction response failed JSON/schema validation. "
         f"Validation error: {error}\n\n"
         "Return a corrected response as exactly one valid JSON object and nothing else. "
         "Use only facts present in this chunk. Do not invent or fill gaps from outside the chunk. "
+        "Classify dependencies and preserve stakeholder expectations, gaps, ambiguities, requirements, and evidence. "
         "Include chunk_id, chunk_summary, facts, source_coverage, and uncertainties. "
         "Return empty arrays for categories absent in the chunk.\n\n"
         f"Required JSON shape:\n{json.dumps(BRD_FACT_JSON_CONTRACT, ensure_ascii=False, indent=2)}\n\n"
@@ -218,10 +311,11 @@ def brd_chunk_fact_repair_prompt(
 
 def brd_fact_merge_prompt(fact_bundle_text: str, batch_label: str) -> str:
     return (
+        f"{BA_BRD_RULES}\n\n"
         "You are the BRD Agent fact merge step. Merge extracted fact JSON objects without adding unsupported information. "
         "Return exactly one valid JSON object and nothing else. Never use markdown or code fences. "
         "Deduplicate repeated facts, preserve unique requirements and table rows, preserve IDs and dates, and keep source evidence inside each fact. "
-        "Do not summarize away requirements, integrations, dependencies, risks, governance gates, stakeholders, acceptance criteria, or version history. "
+        "Do not summarize away requirements, integrations, categorized dependencies, risks, assumptions, issues, decisions, gaps, governance gates, stakeholders, acceptance criteria, roadmap, resource model, commercial details, or version history. "
         "If two facts conflict, keep both and add an uncertainty note. "
         "The response must match this JSON shape and include every top-level key:\n"
         f"{json.dumps(BRD_MERGED_FACT_JSON_CONTRACT, ensure_ascii=False, indent=2)}\n\n"
@@ -232,10 +326,11 @@ def brd_fact_merge_prompt(fact_bundle_text: str, batch_label: str) -> str:
 
 def brd_fact_merge_repair_prompt(fact_bundle_text: str, batch_label: str, invalid_response: Any, error: str) -> str:
     return (
+        f"{BA_BRD_RULES}\n\n"
         "Your previous BRD fact merge response failed JSON/schema validation. "
         f"Validation error: {error}\n\n"
         "Return a corrected response as exactly one valid JSON object and nothing else. "
-        "Include merged_facts, source_coverage, and uncertainties. Do not add facts unsupported by the extracted facts.\n\n"
+        "Include merged_facts, source_coverage, and uncertainties. Do not add facts unsupported by the extracted facts. Preserve gaps and all categorized dependencies.\n\n"
         f"Required JSON shape:\n{json.dumps(BRD_MERGED_FACT_JSON_CONTRACT, ensure_ascii=False, indent=2)}\n\n"
         f"Batch label: {batch_label}\n\n"
         f"Previous invalid response:\n{to_json_text(invalid_response, 3500)}\n\n"
@@ -245,12 +340,16 @@ def brd_fact_merge_repair_prompt(fact_bundle_text: str, batch_label: str, invali
 
 def brd_from_facts_prompt(fact_bundle_text: str, filename: str = "workflow-brd.docx") -> str:
     return (
+        f"{BA_BRD_RULES}\n\n"
         "You are the BRD Agent synthesis step. Create the final Business Requirements Document from extracted source facts. "
         "Return exactly one valid JSON object and nothing else. Never use markdown or code fences. "
         "Use only the provided extracted facts as source material. Do not invent requirements, dates, stakeholders, costs, systems, risks, or sign-offs. "
-        "If something is not supported by extracted facts, use null, an empty array, or a clearly marked assumption in the relevant field. "
-        "Preserve as much detail as possible: do not collapse many functional requirements, NFRs, integrations, dependencies, risks, gates, or acceptance criteria into generic bullets. "
+        "If something is not supported by extracted facts, state 'Not provided in source' and explain the impact in missing_information. "
+        "Preserve as much detail as possible: do not collapse many functional requirements, NFRs, integrations, dependencies, risks, assumptions, issues, decisions, gaps, gates, or acceptance criteria into generic bullets. "
+        "Dependencies must be categorized into technical, business, vendor, compliance, testing, and data groups. "
+        "Write business-facing narrative for executives, PMO teams, business stakeholders, and delivery teams. "
         "Carry source evidence into source_traceability so reviewers can see where the BRD content came from. "
+        "Set brd_quality_verification only after checking the final BRD against the stated BA rules. "
         "The response must match this JSON shape and include every top-level key:\n"
         f"{json.dumps(BRD_JSON_CONTRACT, ensure_ascii=False, indent=2)}\n\n"
         f"Use this output filename unless extracted facts clearly specify another filename: {filename}\n\n"
@@ -260,10 +359,12 @@ def brd_from_facts_prompt(fact_bundle_text: str, filename: str = "workflow-brd.d
 
 def brd_from_facts_repair_prompt(fact_bundle_text: str, invalid_response: Any, error: str, filename: str = "workflow-brd.docx") -> str:
     return (
+        f"{BA_BRD_RULES}\n\n"
         "Your previous BRD synthesis response failed JSON/schema validation. "
         f"Validation error: {error}\n\n"
         "Return a corrected response as exactly one valid JSON object and nothing else. "
-        "Include demand_id, filename, titles, and resolved. Use only the extracted facts; do not invent missing content.\n\n"
+        "Include demand_id, filename, titles, and resolved. Use only the extracted facts; do not invent missing content. "
+        "State missing content as 'Not provided in source' with impact in missing_information.\n\n"
         f"Required JSON shape:\n{json.dumps(BRD_JSON_CONTRACT, ensure_ascii=False, indent=2)}\n\n"
         f"Use this output filename if no better source filename exists: {filename}\n\n"
         f"Previous invalid response:\n{to_json_text(invalid_response, 3500)}\n\n"
@@ -274,12 +375,13 @@ def brd_from_facts_repair_prompt(fact_bundle_text: str, invalid_response: Any, e
 def brd_repair_prompt(document_text: str, invalid_response: Any, error: str, filename: str = "workflow-brd.docx") -> str:
     context = document_context(document_text, 22000)
     return (
+        f"{BA_BRD_RULES}\n\n"
         "Your previous BRD Agent response failed JSON/schema validation. "
         f"Validation error: {error}\n\n"
         "Return a corrected response as exactly one valid JSON object and nothing else. "
         "Include demand_id, filename, titles, and resolved. The resolved object must contain all BRD sections from the contract. "
         "Do not wrap the JSON in markdown. Do not add prose outside the JSON. "
-        "Use null or empty arrays only where the source truly lacks the detail.\n\n"
+        "Use 'Not provided in source' and missing_information impact entries where the source truly lacks detail.\n\n"
         f"Required JSON shape:\n{json.dumps(BRD_JSON_CONTRACT, ensure_ascii=False, indent=2)}\n\n"
         f"Use this output filename if no better source filename exists: {filename}\n\n"
         f"Previous invalid response:\n{to_json_text(invalid_response, 3500)}\n\n"

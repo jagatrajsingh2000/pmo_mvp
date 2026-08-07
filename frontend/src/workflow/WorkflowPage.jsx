@@ -184,13 +184,19 @@ export default function WorkflowPage() {
           [brd.brdFile, stories.file, planner.file, budget.file],
           token,
         )
+        const download = await requestJson('/v1/executive-report/download', generated.data, token)
+        const file = responseToFile(download, 'workflow-executive-report.docx')
+        if (!file) throw new Error('Executive Report agent did not return a usable document.')
         return {
-          detail: 'Executive report generated',
+          detail: file.name,
+          file,
           report: {
             input: 'BRD, user-story, planner, and budget documents',
             agentInput: filesInput('/v1/executive-report/generate', [brd.brdFile, stories.file, planner.file, budget.file]),
-            agentOutput: responseBrief(generated, null),
+            agentOutput: responseBrief(generated, file),
+            downloadedDocument: responseBrief(download, file),
             handoff: null,
+            file,
             fileName: 'executive-report-json',
             data: generated.data,
           },

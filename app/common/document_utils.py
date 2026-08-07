@@ -209,7 +209,9 @@ def _render_value(document, value: Any, level: int, key: str = "") -> None:
         if key:
             document.add_heading(_title(key), min(level, 3))
         if not value:
-            document.add_paragraph("No entries.")
+            document.add_paragraph(
+                "Not provided in source. Impact: confirm whether this area is intentionally out of scope or requires follow-up input."
+            )
             return
         if all(isinstance(item, dict) for item in value):
             _render_dict_table(document, value)
