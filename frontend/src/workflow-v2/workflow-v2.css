@@ -2,10 +2,9 @@
   min-height: 100vh;
   background: #f3f4f1;
   color: #151715;
-  padding: 30px;
+  padding: 48px 30px 30px;
 }
 
-.v2-header,
 .v2-flow,
 .v2-intro-note,
 .v2-document-card,
@@ -14,41 +13,6 @@
   max-width: 1280px;
   margin-left: auto;
   margin-right: auto;
-}
-
-.v2-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 24px;
-  margin-bottom: 20px;
-}
-
-.v2-header h1 {
-  margin: 4px 0 10px;
-  font-size: clamp(36px, 5vw, 64px);
-  line-height: 0.96;
-  letter-spacing: 0;
-}
-
-.v2-header p {
-  margin: 0;
-  max-width: 780px;
-  color: #5b605b;
-  font-size: 17px;
-  line-height: 1.55;
-}
-
-.v2-header a {
-  flex: 0 0 auto;
-  background: #ffffff;
-  border: 1px solid #d6ddd8;
-  border-radius: 8px;
-  color: #151715;
-  font-weight: 850;
-  padding: 11px 15px;
-  text-decoration: none;
-  box-shadow: 0 14px 34px rgba(31, 36, 33, 0.07);
 }
 
 .v2-eyebrow {
@@ -345,7 +309,7 @@
 
 .v2-action-row {
   display: grid;
-  grid-template-columns: 1fr 130px;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px) 130px;
   gap: 16px;
 }
 
@@ -385,6 +349,21 @@
   cursor: not-allowed;
   opacity: 0.62;
   transform: none;
+}
+
+.v2-combined-download {
+  white-space: normal;
+}
+
+.v2-combined-report-source {
+  display: none;
+}
+
+.v2-combined-agent-report {
+  break-after: page;
+  margin-bottom: 34px;
+  padding-bottom: 26px;
+  border-bottom: 1px solid #dfe4df;
 }
 
 .v2-workflow-status {
@@ -1430,16 +1409,10 @@
     padding: 18px;
   }
 
-  .v2-header,
   .v2-document-heading,
   .v2-modal-header,
   .v2-title-outline header {
     display: block;
-  }
-
-  .v2-header a {
-    display: inline-block;
-    margin-top: 14px;
   }
 
   .v2-modal-actions {

@@ -526,6 +526,19 @@ export function downloadReportHtml(agent, html) {
   URL.revokeObjectURL(url)
 }
 
+export function downloadCombinedReportHtml(html) {
+  const reportHtml = buildReportHtml({ title: 'Combined PMO Workflow Report' }, html)
+  const blob = new Blob([reportHtml], { type: 'text/html;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'combined-pmo-workflow-report.html'
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
 export function printReportPdf(agent, html) {
   const reportWindow = window.open('', '_blank')
   if (!reportWindow) {

@@ -1,14 +1,17 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useRef, useState } from 'react'
 import { requestFile, requestFiles, requestJson, tokenFromLogin } from './api'
 import { AgentCard, FlowBar, ResultModal } from './components'
 import { AGENTS, DEFAULT_SOURCE, DEMO_LOGIN } from './constants'
 import { createHandoffArtifacts, groupArtifactsByType, requestFileWithArtifacts, requestFilesWithArtifactGroups } from './handoffArtifacts'
+import { StructuredResult } from './resultRenderer'
+import { downloadCombinedReportHtml } from './reportExport'
 import { createDefaultSourceFile } from './utils'
 import './workflow-v2.css'
 
 const initialSteps = () => Object.fromEntries(AGENTS.map((agent) => [agent.id, { status: 'queued', detail: '' }]))
 
 export default function WorkflowV2Page() {
+  const combinedReportRef = useRef(null)
   const [sourceFile, setSourceFile] = useState(null)
   const [useDefault, setUseDefault] = useState(true)
   const [running, setRunning] = useState(false)
@@ -22,6 +25,7 @@ export default function WorkflowV2Page() {
   const selectedAgent = AGENTS.find((agent) => agent.id === selectedAgentId)
   const modalAgent = AGENTS.find((agent) => agent.id === modalAgentId)
   const completedCount = AGENTS.filter((agent) => steps[agent.id]?.status === 'done').length
+  const canDownloadCombined = completedCount === AGENTS.length && AGENTS.every((agent) => outputs[agent.id]?.data)
 
   function updateStep(id, patch) {
     setSteps((current) => ({ ...current, [id]: { ...current[id], ...patch } }))
@@ -57,6 +61,11 @@ export default function WorkflowV2Page() {
   function openAgent(agentId) {
     setSelectedAgentId(agentId)
     if (outputs[agentId]) setModalAgentId(agentId)
+  }
+
+  function downloadCombinedReport() {
+    if (!canDownloadCombined) return
+    downloadCombinedReportHtml(combinedReportRef.current?.innerHTML || '')
   }
 
   async function runMeasured(id, inputFiles, task) {
@@ -133,24 +142,20 @@ export default function WorkflowV2Page() {
     }
   }
 
-  function navigateHome(event) {
-    event.preventDefault()
-    window.history.pushState({}, '', '/')
-    window.dispatchEvent(new Event('pmo:navigate'))
-  }
-
   return (
     <main className="workflow-v2-page">
       <ResultModal agent={modalAgent} output={modalAgentId ? outputs[modalAgentId] : null} onClose={() => setModalAgentId('')} />
-
-      <header className="v2-header">
-        <div>
-          <p className="v2-eyebrow">Hosted PMO Workflow</p>
-          <h1>PMO Delivery Workflow</h1>
-          <p>Move from source documents to BRD, backlog, timeline, budget, and executive reporting in one guided agent sequence.</p>
-        </div>
-        <a href="/" onClick={navigateHome}>Planner Upload</a>
-      </header>
+      <div className="v2-combined-report-source" aria-hidden="true" ref={combinedReportRef}>
+        {AGENTS.map((agent) => (
+          outputs[agent.id]?.data ? (
+            <section className="v2-combined-agent-report" key={agent.id}>
+              <div className="report-kicker">Agent Report</div>
+              <h1>{agent.title}</h1>
+              <StructuredResult data={outputs[agent.id].data} agentId={agent.id} />
+            </section>
+          ) : null
+        ))}
+      </div>
 
       {error && <div className="v2-error">{error}</div>}
 
@@ -186,6 +191,9 @@ export default function WorkflowV2Page() {
           <div className="v2-action-row">
             <button type="submit" className="v2-primary" disabled={running}>
               {running ? 'Running Workflow' : 'Run Workflow'}
+            </button>
+            <button type="button" className="v2-secondary v2-combined-download" onClick={downloadCombinedReport} disabled={!canDownloadCombined || running}>
+              Download Combined Report
             </button>
             <button type="button" className="v2-secondary" onClick={useDefaultSource} disabled={running}>
               Reset
