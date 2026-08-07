@@ -2,7 +2,8 @@ import React, { useMemo, useState } from 'react'
 import { requestFile, requestFiles, requestJson, tokenFromLogin } from './api'
 import { AgentCard, FlowBar, ResultModal } from './components'
 import { AGENTS, DEFAULT_SOURCE, DEMO_LOGIN } from './constants'
-import { createDefaultSourceFile, responseToFile } from './utils'
+import { createHandoffArtifacts, groupArtifactsByType, requestFileWithArtifacts, requestFilesWithArtifactGroups } from './handoffArtifacts'
+import { createDefaultSourceFile } from './utils'
 import './workflow-v2.css'
 
 const initialSteps = () => Object.fromEntries(AGENTS.map((agent) => [agent.id, { status: 'queued', detail: '' }]))
@@ -64,12 +65,13 @@ export default function WorkflowV2Page() {
     try {
       const result = await task()
       const elapsed = `${Math.max(1, Math.round((performance.now() - startedAt) / 1000))}s`
+      const resolvedInputFiles = result.inputFiles || inputFiles
       setOutputs((current) => ({
         ...current,
         [id]: {
           status: 'Complete',
           elapsed,
-          inputFiles,
+          inputFiles: resolvedInputFiles,
           data: result.data,
         },
       }))
@@ -95,45 +97,32 @@ export default function WorkflowV2Page() {
 
       const brd = await runMeasured('brd', [inputFile], async () => {
         const preview = await requestFile('/v1/brd/preview', 'file', inputFile, token)
-        const resolved = preview.data?.resolved || preview.data
-        const download = await requestJson('/v1/brd/download', { resolved, filename: 'workflow-v2-brd.docx' }, token)
-        const file = responseToFile(download, 'workflow-v2-brd.docx')
-        if (!file) throw new Error('BRD handoff document was not returned.')
-        return { data: preview.data, file }
+        const artifacts = createHandoffArtifacts('BRD Agent', 'workflow-v2-brd', preview.data)
+        return { data: preview.data, artifacts }
       })
 
-      const stories = await runMeasured('stories', [brd.file], async () => {
-        const generated = await requestFile('/v1/userstory/generate-file', 'file', brd.file, token)
-        const download = await requestJson('/v1/userstory/download', generated.data, token)
-        const file = responseToFile(download, 'workflow-v2-user-stories.docx')
-        if (!file) throw new Error('User Story handoff document was not returned.')
-        return { data: generated.data, file }
+      const stories = await runMeasured('stories', brd.artifacts.map((artifact) => artifact.file), async () => {
+        const { response, artifact } = await requestFileWithArtifacts('/v1/userstory/generate-file', brd.artifacts, requestFile, token)
+        const artifacts = createHandoffArtifacts('User Story Agent', 'workflow-v2-user-stories', response.data)
+        return { data: response.data, artifacts, inputFiles: [artifact.file] }
       })
 
-      const planner = await runMeasured('planner', [brd.file], async () => {
-        const generated = await requestFile('/planer/upload', 'file', brd.file, token)
-        const download = await requestJson('/planer/download', generated.data, token)
-        const file = responseToFile(download, 'workflow-v2-planner.docx')
-        if (!file) throw new Error('Planner handoff document was not returned.')
-        return { data: generated.data, file }
+      const planner = await runMeasured('planner', brd.artifacts.map((artifact) => artifact.file), async () => {
+        const { response, artifact } = await requestFileWithArtifacts('/planer/upload', brd.artifacts, requestFile, token)
+        const artifacts = createHandoffArtifacts('Planner Agent', 'workflow-v2-planner', response.data)
+        return { data: response.data, artifacts, inputFiles: [artifact.file] }
       })
 
-      const budget = await runMeasured('budget', [planner.file], async () => {
-        const generated = await requestFile('/v1/budget/generate-from-file', 'file', planner.file, token)
-        const download = await requestJson('/v1/budget/download', generated.data, token)
-        const file = responseToFile(download, 'workflow-v2-budget.docx')
-        if (!file) throw new Error('Budget handoff document was not returned.')
-        return { data: generated.data, file }
+      const budget = await runMeasured('budget', planner.artifacts.map((artifact) => artifact.file), async () => {
+        const { response, artifact } = await requestFileWithArtifacts('/v1/budget/generate-from-file', planner.artifacts, requestFile, token)
+        const artifacts = createHandoffArtifacts('Budget Agent', 'workflow-v2-budget', response.data)
+        return { data: response.data, artifacts, inputFiles: [artifact.file] }
       })
 
-      await runMeasured('executive', [brd.file, stories.file, planner.file, budget.file], async () => {
-        const generated = await requestFiles(
-          '/v1/executive-report/generate',
-          'files',
-          [brd.file, stories.file, planner.file, budget.file],
-          token,
-        )
-        return { data: generated.data }
+      const executiveGroups = groupArtifactsByType([brd.artifacts, stories.artifacts, planner.artifacts, budget.artifacts])
+      await runMeasured('executive', executiveGroups.flatMap((group) => group.files), async () => {
+        const { response, group } = await requestFilesWithArtifactGroups('/v1/executive-report/generate', executiveGroups, requestFiles, token)
+        return { data: response.data, inputFiles: group.files }
       })
 
       setSelectedAgentId('brd')

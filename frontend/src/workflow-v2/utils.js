@@ -33,31 +33,6 @@ export function fileBrief(file) {
   }
 }
 
-export function responseToFile(result, fallbackName) {
-  if (!result) return null
-  if (result.kind === 'blob') {
-    return new File([result.data], fallbackName, {
-      type: result.data.type || 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    })
-  }
-  const base64 =
-    result.data?.file_base64 ||
-    result.data?.docx_base64 ||
-    result.data?.document_base64 ||
-    result.data?.content_base64 ||
-    result.data?.data?.file_base64 ||
-    result.data?.data?.docx_base64 ||
-    result.data?.data?.document_base64
-  if (!base64) return null
-  const raw = base64.includes(',') ? base64.split(',').pop() : base64
-  const bytes = atob(raw)
-  const buffer = new Uint8Array(bytes.length)
-  for (let index = 0; index < bytes.length; index += 1) buffer[index] = bytes.charCodeAt(index)
-  return new File([buffer], fallbackName, {
-    type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  })
-}
-
 export function stringifyJson(value) {
   return JSON.stringify(value, null, 2)
 }

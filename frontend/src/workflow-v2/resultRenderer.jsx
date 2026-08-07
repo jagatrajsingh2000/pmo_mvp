@@ -1,9 +1,12 @@
 import React from 'react'
+import { PlannerVisuals, plannerData } from './plannerVisuals'
 import { labelize } from './utils'
 
-const HIDDEN_FIELD_PATTERN = /(base64|binary|blob|bytes|content_base64|docx_base64|document_base64|file_base64)/i
+const HIDDEN_FIELD_PATTERN = /(base64|binary|blob|bytes|content_base64|docx_base64|document_base64|file_base64|^source_text$|^extracted_text$|^raw_text$|^document_text$|^input_text$|^full_text$|^ocr_text$|^text_content$|^document_content$|^sourceText$|^extractedText$|^rawText$|^documentText$|^inputText$|^fullText$|^ocrText$|^textContent$|^documentContent$)/i
 const LONG_TEXT_LIMIT = 520
 const RESPONSE_META_KEYS = ['demand_id', 'filename', 'ingestion_metadata']
+const EXECUTIVE_HIDDEN_KEYS = ['file_ids', 'source_files', 'files', 'uploaded_files', 'input_files']
+const BUDGET_HIDDEN_KEYS = ['file_id', 'source_text_chars', 'source_text', 'extracted_text']
 const SECTION_LABELS = {
   non_functional_requirements: 'Non-Functional Requirements',
   raid: 'Risks, Assumptions, Issues, Decisions',
@@ -13,8 +16,8 @@ const SECTION_LABELS = {
 }
 
 export function StructuredResult({ data, agentId }) {
-  const { main, meta } = normalizeResult(data)
-  const sections = renderableEntries(main)
+  const { main, meta } = normalizeResult(data, agentId)
+  const sections = renderableEntries(filterAgentSections(main, agentId))
   const titles = agentId === 'brd' ? displayedSectionTiles(sections) : []
   const metaRows = renderableEntries(omitKeys(meta, ['titles']))
   const metrics = sectionMetrics(main)
@@ -26,6 +29,7 @@ export function StructuredResult({ data, agentId }) {
   return (
     <div className="v2-structured-result">
       {titles.length > 0 && <TitleOutline titles={titles} />}
+      {agentId === 'planner' && <PlannerVisuals data={data} />}
 
       {metaRows.length > 0 && (
         <section className="v2-output-section compact">
@@ -66,9 +70,22 @@ export function StructuredResult({ data, agentId }) {
   )
 }
 
-function normalizeResult(data) {
+function filterAgentSections(main, agentId) {
+  if (agentId === 'executive') return omitKeys(main, EXECUTIVE_HIDDEN_KEYS)
+  if (agentId === 'budget') return omitKeys(main, BUDGET_HIDDEN_KEYS)
+  return main
+}
+
+function normalizeResult(data, agentId) {
   if (!data || typeof data !== 'object') return { main: { output: data }, meta: {} }
   if (Array.isArray(data)) return { main: { output: data }, meta: {} }
+
+  if (agentId === 'planner') {
+    return {
+      main: omitKeys(plannerData(data), RESPONSE_META_KEYS),
+      meta: {},
+    }
+  }
 
   if (isPlainObject(data.resolved)) {
     return {
