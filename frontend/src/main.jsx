@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import WorkflowPage from './workflow/WorkflowPage'
+import WorkflowV2Page from './workflow-v2/WorkflowV2Page'
 import './style.css'
 
 function Router() {
@@ -18,14 +19,19 @@ function Router() {
   }, [])
 
   const isWorkflow = path === '/workflow'
+  const isWorkflowV2 = path === '/workflow-v2'
+  const isMainApp = !isWorkflow && !isWorkflowV2
 
   return (
     <>
-      <div hidden={isWorkflow}>
+      <div hidden={!isMainApp}>
         <App />
       </div>
       <div hidden={!isWorkflow}>
         <WorkflowPage />
+      </div>
+      <div hidden={!isWorkflowV2}>
+        <WorkflowV2Page />
       </div>
     </>
   )
