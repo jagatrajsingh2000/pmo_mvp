@@ -1,5 +1,6 @@
 import React from 'react'
-import { fileBrief, getPayloadSize, resultSummary, stringifyJson } from './utils'
+import { StructuredResult } from './resultRenderer'
+import { fileBrief, getPayloadSize, resultSummary } from './utils'
 
 export function FlowBar({ agents, steps, selectedId, onSelect }) {
   return (
@@ -51,7 +52,7 @@ export function AgentCard({ agent, state, output, selected, onOpen }) {
         </div>
         <div>
           <dt>Result</dt>
-          <dd>{output ? `${getPayloadSize(output.data)} JSON` : state?.detail || 'Waiting'}</dd>
+          <dd>{output ? `${getPayloadSize(output.data)} output` : state?.detail || 'Waiting'}</dd>
         </div>
       </dl>
     </button>
@@ -102,8 +103,8 @@ export function ResultModal({ agent, output, onClose }) {
         </section>
 
         <section className="v2-modal-section">
-          <h3>Raw Agent JSON</h3>
-          <pre className="v2-json">{stringifyJson(output.data)}</pre>
+          <h3>Agent Output</h3>
+          <StructuredResult data={output.data} />
         </section>
       </section>
     </div>

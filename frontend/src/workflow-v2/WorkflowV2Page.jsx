@@ -212,7 +212,7 @@ export default function WorkflowV2Page() {
       <section className="v2-agent-heading">
         <span>Agent Details</span>
         <strong>{selectedAgent?.title}</strong>
-        <p>Choose an agent below to inspect its role. Completed agents open a result popup with the JSON returned by the hosted API.</p>
+        <p>Choose an agent below to inspect its role. Completed agents open a result popup with the hosted API response displayed as report sections, tables, and coverage summaries.</p>
       </section>
 
       <section className="v2-card-grid">
