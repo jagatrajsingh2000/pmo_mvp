@@ -1,8 +1,8 @@
-# PMO Timeline Planner Agent (FastAPI)
+# PMO Multi-Agent Workflow API (FastAPI)
 
-FastAPI + React app that accepts project documents (PDF, XLSX, CSV, DOCX, TXT), extracts text locally, and generates PMO timeline artifacts: WBS, project schedule, sprint plan, milestone plan, critical path, dependency map, resource allocation, timeline risks, effort estimates, and schedule optimization recommendations.
+FastAPI + React app that accepts project documents (PDF, XLSX, CSV, DOCX, TXT), extracts text locally, and runs a PMO workflow across BRD, user-story, planner, budget, and executive-report agents.
 
-The planner uses Agno with Azure OpenAI. Azure OpenAI configuration is required for all planner artifact generation.
+All generation uses Agno with Azure OpenAI. Azure OpenAI configuration is required for agent output generation.
 
 Quick Start
 
@@ -57,29 +57,43 @@ AZURE_OPENAI_API_VERSION=2025-01-01-PREVIEW
 AZURE_OPENAI_DEPLOYMENT=your-deployment-name
 ```
 
-Missing Azure values, Azure API errors, invalid JSON, or incomplete planner artifacts fail clearly instead of silently using local output.
+Missing Azure values, Azure API errors, invalid JSON, or incomplete agent artifacts fail clearly instead of silently using local output.
 
 Endpoints
 
 - `GET /health` - basic health check
+- `POST /v1/auth/login` - local demo login for workflow token creation
+- `POST /v1/brd/preview` - multipart upload file field `file`; returns structured BRD JSON
+- `POST /v1/brd/generate` - JSON body with `fields`; returns a BRD `.docx`
+- `POST /v1/brd/download` - JSON BRD preview body; returns a BRD `.docx`
+- `POST /v1/userstory/generate-file` - multipart BRD file field `file`; returns backlog JSON
+- `POST /v1/userstory/download` - user-story JSON body; returns a `.docx`
 - `GET /planer/planner-status` - shows whether Azure OpenAI is configured, without exposing secrets
 - `GET /planer/sample-documents` - lists local documents under `sample_docs/`
 - `POST /planer/upload` - multipart upload file field `file`; returns generated planner artifacts and review
 - `POST /planer/plan-text` - JSON body with `text`; returns generated planner artifacts and review
+- `POST /planer/download` - planner JSON body; returns a planner `.docx`
+- `POST /v1/budget/generate-from-file` - multipart planner file field `file`; returns budget JSON
+- `POST /v1/budget/generate` - JSON planner payload; returns budget JSON
+- `POST /v1/budget/download` - budget JSON body; returns a `.docx`
+- `POST /v1/executive-report/generate` - multipart files field `files`; returns executive report JSON
+- `POST /v1/executive-report/download` - executive report JSON body; returns a `.docx`
 
 Note: This is an initial prototype. Files are stored in `uploads/` and outputs in `outputs/`.
 
-Planner agent
- - FastAPI planner routes live in `app/planner_agent/route/planer_api.py`.
- - Upload saving and document text extraction helpers live in `app/planner_agent/route/utils.py`.
- - Agno and Azure OpenAI agent code lives in `app/planner_agent/agent/`.
- - Shared prompt contracts live in `app/planner_agent/agent/prompts.py` to keep generation and review DRY.
+Agent structure
+ - Shared upload extraction, JSON helpers, and Word report rendering live in `app/common/`.
+ - BRD routes live in `app/brd_agent/route/brd_api.py`; BRD prompts and Agno orchestration live in `app/brd_agent/agent/`.
+ - User-story routes live in `app/userstory_agent/route/userstory_api.py`; user-story prompts and Agno orchestration live in `app/userstory_agent/agent/`.
+ - Planner routes live in `app/planner_agent/route/planer_api.py`; planner prompts, review, and Agno orchestration live in `app/planner_agent/agent/`.
+ - Budget routes live in `app/budget_agent/route/budget_api.py`; budget prompts and Agno orchestration live in `app/budget_agent/agent/`.
+ - Executive-report routes live in `app/executive_agent/route/executive_api.py`; executive prompts and Agno orchestration live in `app/executive_agent/agent/`.
 
 Frontend
  - A React frontend (Vite) is in `frontend/`. Run it in a second terminal while the backend is running.
  - The report includes visual charts for schedule, milestones, dependencies, resources, effort, and risks.
  - The generated output has a separate `Quality Scores` tab for input grounding, business accuracy, requirements quality, hallucination control, traceability, stakeholder mapping, risk management, technical accuracy, BRD completeness, and audit readiness.
- - The standalone hosted-backend chain page is available at `http://localhost:3000/workflow`.
+ - The standalone workflow chain page is available at `http://localhost:3000/workflow`.
  - Use the `Export PDF` button after generation. It opens the browser print dialog; choose `Save as PDF` or `Microsoft Print to PDF`.
 
 macOS / Linux:
@@ -99,6 +113,7 @@ npm run dev
 ```
 
 Open the frontend at `http://localhost:3000`. It expects the backend at `http://localhost:8000`.
+To use the hosted Azure backend instead, set `VITE_API_BASE_URL=https://gds-pmoh-demo-be-wa-eus.azurewebsites.net` in `frontend/.env.local`.
 
 Stopping Servers And Port Conflicts
 

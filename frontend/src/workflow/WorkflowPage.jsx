@@ -5,7 +5,6 @@ import { AGENT_STEPS, DEFAULT_BRIEF, DEMO_LOGIN } from './constants'
 import { buildHtmlReport } from './htmlReport'
 import {
   asFileName,
-  endpointInput,
   fileInput,
   filesInput,
   responseBrief,
@@ -56,6 +55,14 @@ export default function WorkflowPage() {
     setOutputs((current) => ({ ...current, [id]: value }))
   }
 
+  function createDefaultBrdFile() {
+    const lines = ['Restaurant Web App BRD', '', ...Object.entries(DEFAULT_BRIEF).map(([key, value]) => {
+      if (Array.isArray(value)) return `${key}:\n${value.map((item) => `- ${item}`).join('\n')}`
+      return `${key}: ${value}`
+    })]
+    return new File([lines.join('\n\n')], 'default-restaurant-web-app-brd.txt', { type: 'text/plain' })
+  }
+
   async function runMeasured(id, task) {
     const startedAt = performance.now()
     updateStep(id, { status: 'running', detail: '' })
@@ -72,29 +79,25 @@ export default function WorkflowPage() {
   }
 
   async function buildBrdSource(token) {
-    const fields = sourceFile
-      ? {
-          ...DEFAULT_BRIEF,
-          source_document_name: sourceFile.name,
-          source_document_type: sourceFile.type || 'document',
-          source_document_size_bytes: sourceFile.size,
-        }
-      : DEFAULT_BRIEF
-    const payload = { fields, filename: 'workflow-brd.docx' }
-    const generated = await requestJson('/v1/brd/generate', payload, token)
-    const brdFile = responseToFile(generated, 'workflow-brd.docx')
+    const inputFile = sourceFile || createDefaultBrdFile()
+    const preview = await requestFile('/v1/brd/preview', 'file', inputFile, token)
+    const resolvedContent = preview.data?.resolved || preview.data
+    const downloadPayload = { resolved: resolvedContent, filename: 'workflow-brd.docx' }
+    const download = await requestJson('/v1/brd/download', downloadPayload, token)
+    const brdFile = responseToFile(download, 'workflow-brd.docx')
     if (!brdFile) throw new Error('BRD agent did not return a usable document.')
     return {
       detail: brdFile.name,
       brdFile,
       report: {
         input: sourceName,
-        agentInput: endpointInput('/v1/brd/generate', payload),
-        agentOutput: responseBrief(generated, brdFile),
+        agentInput: fileInput('/v1/brd/preview', inputFile),
+        agentOutput: responseBrief(preview, brdFile),
+        downloadedDocument: responseBrief(download, brdFile),
         handoff: fileInput('/v1/userstory/generate-file and /planer/upload', brdFile),
         handoffFile: brdFile,
         file: brdFile,
-        data: generated.kind === 'json' ? generated.data : responseBrief(generated, brdFile),
+        data: resolvedContent,
       },
     }
   }

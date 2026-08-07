@@ -94,10 +94,6 @@ export function responseBrief(result, file) {
   }
 }
 
-export function endpointInput(endpoint, payload) {
-  return { endpoint, payload }
-}
-
 export function fileInput(endpoint, file) {
   return { endpoint, multipart_field: 'file', file: fileBrief(file) }
 }

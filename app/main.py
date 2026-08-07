@@ -3,7 +3,12 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from app.auth.route import router as auth_router
+from app.brd_agent.route import router as brd_router
+from app.budget_agent.route import router as budget_router
+from app.executive_agent.route import router as executive_router
 from app.planner_agent.route import router as planner_router
+from app.userstory_agent.route import router as userstory_router
 
 load_dotenv()
 
@@ -13,7 +18,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="PMO Timeline Planner Agent")
+app = FastAPI(title="PMO Multi-Agent Workflow API")
 
 # Allow frontend dev server
 app.add_middleware(
@@ -24,7 +29,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
+app.include_router(brd_router)
+app.include_router(userstory_router)
 app.include_router(planner_router)
+app.include_router(budget_router)
+app.include_router(executive_router)
 
 
 @app.get("/health")

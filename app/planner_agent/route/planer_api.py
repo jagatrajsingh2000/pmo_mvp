@@ -3,9 +3,12 @@ import logging
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from typing import Any, Dict
+
+from fastapi import APIRouter, Body, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
+from app.common.document_utils import docx_response, normalize_report_payload
 from app.planner_agent import run_pipeline_agno
 from app.planner_agent.agent.azure_client import planner_status
 from app.planner_agent.route.utils import extract_text_from_file, save_upload_file
@@ -101,3 +104,12 @@ async def plan_text(payload: dict):
     out = _build_response(file_id, "direct_text_input.txt", text)
     _save_output(file_id, out)
     return JSONResponse(out)
+
+
+@router.post("/download")
+async def download(payload: Dict[str, Any] = Body(...)):
+    filename = payload.get("download_filename") or payload.get("filename") or "workflow-planner.docx"
+    report_payload = normalize_report_payload(payload)
+    if not report_payload:
+        raise HTTPException(status_code=400, detail="Planner output is required.")
+    return docx_response("Project Timeline Planner Report", report_payload, filename)

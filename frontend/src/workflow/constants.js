@@ -1,4 +1,4 @@
-export const HOSTED_API_BASE = 'https://gds-pmoh-demo-be-wa-eus.azurewebsites.net'
+export const HOSTED_API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
 export const DEMO_LOGIN = {
   email: 'Admin123@ey.com',
