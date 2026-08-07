@@ -89,6 +89,12 @@ Agent structure
  - Budget routes live in `app/budget_agent/route/budget_api.py`; budget prompts and Agno orchestration live in `app/budget_agent/agent/`.
  - Executive-report routes live in `app/executive_agent/route/executive_api.py`; executive prompts and Agno orchestration live in `app/executive_agent/agent/`.
 
+BRD large-document handling
+ - Small BRD inputs are generated in one Azure OpenAI call.
+ - Inputs above `BRD_DIRECT_MAX_CHARS` use a chunked Azure flow: each document chunk is extracted into grounded facts with evidence, fact sets are merged only if needed, and the final BRD is synthesized from those extracted facts.
+ - This avoids silently dropping later sections of a massive Word/PDF input and reduces hallucination because the final BRD is constrained to source-backed extracted facts.
+ - Useful tuning variables in `.env`: `BRD_DIRECT_MAX_CHARS`, `BRD_CHUNK_SIZE_CHARS`, `BRD_CHUNK_OVERLAP_CHARS`, `BRD_FACT_BATCH_MAX_CHARS`, and `BRD_FACT_BUNDLE_MAX_CHARS`.
+
 Frontend
  - A React frontend (Vite) is in `frontend/`. Run it in a second terminal while the backend is running.
  - The report includes visual charts for schedule, milestones, dependencies, resources, effort, and risks.
