@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { requestFile, requestFiles, requestJson, tokenFromLogin } from './api'
 import { AgentCard, FlowBar, ResultModal } from './components'
 import { AGENTS, DEFAULT_SOURCE, DEMO_LOGIN } from './constants'
@@ -6,19 +6,21 @@ import { createHandoffArtifacts, groupArtifactsByType, requestFileWithArtifacts,
 import { StructuredResult } from './resultRenderer'
 import { downloadCombinedReportHtml, printCombinedReportPdf } from './reportExport'
 import { createDefaultSourceFile } from './utils'
+import { clearWorkflowSnapshot, hasPersistableRun, loadWorkflowSnapshot, saveWorkflowSnapshot } from './workflowStorage'
 import './workflow-v2.css'
 
 const initialSteps = () => Object.fromEntries(AGENTS.map((agent) => [agent.id, { status: 'queued', detail: '' }]))
 
 export default function WorkflowV2Page() {
   const combinedReportRef = useRef(null)
+  const [restoredRun] = useState(() => loadWorkflowSnapshot())
   const [sourceFile, setSourceFile] = useState(null)
   const [useDefault, setUseDefault] = useState(true)
   const [running, setRunning] = useState(false)
   const [error, setError] = useState('')
-  const [steps, setSteps] = useState(initialSteps)
-  const [outputs, setOutputs] = useState({})
-  const [selectedAgentId, setSelectedAgentId] = useState('brd')
+  const [steps, setSteps] = useState(() => ({ ...initialSteps(), ...(restoredRun?.steps || {}) }))
+  const [outputs, setOutputs] = useState(() => restoredRun?.outputs || {})
+  const [selectedAgentId, setSelectedAgentId] = useState(() => restoredRun?.selectedAgentId || 'brd')
   const [modalAgentId, setModalAgentId] = useState('')
 
   const sourceName = useMemo(() => sourceFile?.name || 'Default restaurant source brief', [sourceFile])
@@ -27,11 +29,17 @@ export default function WorkflowV2Page() {
   const completedCount = AGENTS.filter((agent) => steps[agent.id]?.status === 'done').length
   const canDownloadCombined = completedCount === AGENTS.length && AGENTS.every((agent) => outputs[agent.id]?.data)
 
+  useEffect(() => {
+    if (!hasPersistableRun(steps, outputs)) return
+    saveWorkflowSnapshot({ steps, outputs, selectedAgentId })
+  }, [outputs, selectedAgentId, steps])
+
   function updateStep(id, patch) {
     setSteps((current) => ({ ...current, [id]: { ...current[id], ...patch } }))
   }
 
   function resetRun() {
+    clearWorkflowSnapshot()
     setSteps(initialSteps())
     setOutputs({})
     setError('')
