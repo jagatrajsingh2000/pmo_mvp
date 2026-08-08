@@ -1,11 +1,8 @@
-const STORAGE_KEY = 'pmo.workflowV2.latestRun'
+let workflowSnapshot = null
 
 export function loadWorkflowSnapshot() {
-  if (!canUseStorage()) return null
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    const snapshot = JSON.parse(raw)
+    const snapshot = workflowSnapshot ? cloneSnapshot(workflowSnapshot) : null
     if (!snapshot || typeof snapshot !== 'object') return null
     const outputs = normalizeStoredOutputs(snapshot.outputs)
     const steps = normalizeRestoredSteps(snapshot.steps, outputs)
@@ -22,25 +19,18 @@ export function loadWorkflowSnapshot() {
 }
 
 export function saveWorkflowSnapshot({ steps, outputs, selectedAgentId }) {
-  if (!canUseStorage() || !hasPersistableRun(steps, outputs)) return
-  const snapshot = {
+  if (!hasPersistableRun(steps, outputs)) return
+  workflowSnapshot = {
     version: 1,
     savedAt: new Date().toISOString(),
     selectedAgentId,
     steps: normalizeStoredSteps(steps),
     outputs: normalizeStoredOutputs(outputs),
   }
-
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot))
-  } catch {
-    window.localStorage.removeItem(STORAGE_KEY)
-  }
 }
 
 export function clearWorkflowSnapshot() {
-  if (!canUseStorage()) return
-  window.localStorage.removeItem(STORAGE_KEY)
+  workflowSnapshot = null
 }
 
 export function hasPersistableRun(steps, outputs) {
@@ -88,10 +78,6 @@ function normalizeStoredOutputs(outputs) {
   )
 }
 
-function canUseStorage() {
-  try {
-    return typeof window !== 'undefined' && Boolean(window.localStorage)
-  } catch {
-    return false
-  }
+function cloneSnapshot(snapshot) {
+  return JSON.parse(JSON.stringify(snapshot))
 }
